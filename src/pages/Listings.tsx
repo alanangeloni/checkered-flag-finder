@@ -5,14 +5,12 @@ import Footer from '@/components/Footer';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Slider } from '@/components/ui/slider';
 import {
   Card,
   CardContent,
-  CardFooter,
-  CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
-import { Filter, Search } from 'lucide-react';
+import { Filter, Search, ChevronDown } from 'lucide-react';
 
 // Mock data for demonstration
 const mockListings = [
@@ -62,24 +60,42 @@ const mockListings = [
     price: 135000,
     location: "Seattle, WA",
     mileage: 12500,
-    image: "https://images.unsplash.com/photo-1581362508255-e4e11f5caee3"
+    image: "public/lovable-uploads/0142baeb-373b-448f-9a23-a1d1bc774af9.png"
   }
 ];
 
+// Price format helper
+const formatPrice = (price: number) => {
+  return `$${price.toLocaleString()}`;
+};
+
 const Listings = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [priceRange, setPriceRange] = useState({ min: '', max: '' });
+  const [priceRange, setPriceRange] = useState<[number, number]>([100000, 300000]);
   const [showFilters, setShowFilters] = useState(false);
+  const [sort, setSort] = useState('newest');
+
+  // Min and max prices from data
+  const minPrice = 100000;
+  const maxPrice = 300000;
 
   // Filter listings based on search and price range
   const filteredListings = mockListings.filter(listing => {
     const matchesSearch = listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           listing.location.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesMinPrice = priceRange.min === '' || listing.price >= Number(priceRange.min);
-    const matchesMaxPrice = priceRange.max === '' || listing.price <= Number(priceRange.max);
+    const matchesPrice = listing.price >= priceRange[0] && listing.price <= priceRange[1];
     
-    return matchesSearch && matchesMinPrice && matchesMaxPrice;
+    return matchesSearch && matchesPrice;
+  });
+
+  // Sort listings
+  const sortedListings = [...filteredListings].sort((a, b) => {
+    if (sort === 'price-low') return a.price - b.price;
+    if (sort === 'price-high') return b.price - a.price;
+    if (sort === 'mileage') return a.mileage - b.mileage;
+    // Default: newest
+    return b.id - a.id;
   });
 
   return (
@@ -89,92 +105,103 @@ const Listings = () => {
         <div className="container mx-auto px-4 py-8">
           <h1 className="text-3xl font-bold mb-6">Race Car Listings</h1>
           
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-grow relative">
-              <Input
-                type="text"
-                placeholder="Search by model, make, or location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10"
-              />
-              <Search className="absolute right-3 top-3 text-gray-400" size={18} />
+          {/* Search and filter bar */}
+          <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+            <div className="flex flex-col md:flex-row gap-4 mb-4">
+              <div className="flex-grow relative">
+                <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+                <Input
+                  type="text"
+                  placeholder="Search by model, make, or location..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter size={18} />
+                Filters
+                <ChevronDown size={16} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
+              </Button>
             </div>
-            <Button 
-              variant="outline" 
-              className="flex items-center gap-2"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter size={18} />
-              Filters
-            </Button>
+
+            {/* Expandable filter section */}
+            {showFilters && (
+              <div className="border-t border-gray-200 pt-4 mt-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <Label htmlFor="price-range" className="block mb-2">
+                      Price Range: {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
+                    </Label>
+                    <Slider
+                      id="price-range"
+                      defaultValue={[priceRange[0], priceRange[1]]}
+                      min={minPrice}
+                      max={maxPrice}
+                      step={5000}
+                      onValueChange={(values) => setPriceRange(values as [number, number])}
+                      className="my-4"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="sort" className="block mb-2">Sort By</Label>
+                    <select
+                      id="sort"
+                      value={sort}
+                      onChange={(e) => setSort(e.target.value)}
+                      className="w-full rounded-md border border-input p-2"
+                    >
+                      <option value="newest">Newest First</option>
+                      <option value="price-low">Price: Low to High</option>
+                      <option value="price-high">Price: High to Low</option>
+                      <option value="mileage">Lowest Mileage</option>
+                    </select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button className="mr-2" onClick={() => {
+                      setSearchTerm('');
+                      setPriceRange([minPrice, maxPrice]);
+                      setSort('newest');
+                    }}>
+                      Reset All
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {showFilters && (
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>Filter Options</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="min-price">Minimum Price ($)</Label>
-                    <Input
-                      id="min-price"
-                      type="number"
-                      placeholder="Min Price"
-                      value={priceRange.min}
-                      onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="max-price">Maximum Price ($)</Label>
-                    <Input
-                      id="max-price"
-                      type="number"
-                      placeholder="Max Price"
-                      value={priceRange.max}
-                      onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
-                    />
-                  </div>
-                  {/* More filter options could be added here */}
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Button variant="outline" className="mr-2" onClick={() => {
-                  setSearchTerm('');
-                  setPriceRange({ min: '', max: '' });
-                }}>
-                  Reset
-                </Button>
-                <Button onClick={() => setShowFilters(false)}>Apply Filters</Button>
-              </CardFooter>
-            </Card>
-          )}
-
+          {/* Listings grid with new card design */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredListings.map(car => (
-              <Card key={car.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-48 overflow-hidden">
+            {sortedListings.map(car => (
+              <Card key={car.id} className="overflow-hidden rounded-lg hover:shadow-lg transition-shadow">
+                <div className="relative">
                   <img 
                     src={car.image} 
                     alt={car.title} 
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    className="w-full h-64 object-cover"
                   />
+                  <div className="absolute bottom-0 left-0 bg-black bg-opacity-70 px-4 py-2 text-white text-xl font-bold">
+                    ${car.price.toLocaleString()}
+                  </div>
                 </div>
-                <CardHeader>
-                  <CardTitle>{car.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-bold text-racecar-red">${car.price.toLocaleString()}</p>
-                  <div className="flex justify-between items-center mt-2 text-gray-500">
+                <CardContent className="p-4">
+                  <h3 className="text-xl font-bold mb-2">{car.title}</h3>
+                  <div className="flex justify-between items-center text-gray-600">
                     <span>{car.location}</span>
                     <span>{car.mileage.toLocaleString()} miles</span>
                   </div>
+                  <Button 
+                    className="w-full mt-4 bg-black hover:bg-gray-800 text-white" 
+                    size="lg"
+                  >
+                    View Details
+                  </Button>
                 </CardContent>
-                <CardFooter>
-                  <Button className="w-full bg-black hover:bg-gray-800 text-white">View Details</Button>
-                </CardFooter>
               </Card>
             ))}
           </div>
