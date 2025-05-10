@@ -156,57 +156,62 @@ const Header = () => {
   );
 };
 
-// Expanded categories list for the dropdown
+// Updated categories list for the dropdown
 const categories = [
   {
-    title: "Formula Racing",
+    title: "Open Wheel",
     description: "Single-seater, open-wheel racing cars including F1, F2, F3, and IndyCar",
-    href: "/category/formula",
+    href: "/category/open-wheel",
   },
   {
-    title: "Sports Cars",
-    description: "High-performance road cars designed for speed and exhilarating driving experiences",
-    href: "/category/sports-cars",
-  },
-  {
-    title: "GT Cars",
-    description: "Grand touring cars built for both performance and comfort on long-distance drives",
-    href: "/category/gt-cars",
-  },
-  {
-    title: "Rally Cars",
-    description: "Modified production cars designed for off-road racing across varied terrains",
-    href: "/category/rally",
-  },
-  {
-    title: "Touring Cars",
-    description: "Production-based race cars used in touring car racing championships",
-    href: "/category/touring",
-  },
-  {
-    title: "Prototype Racing",
+    title: "Prototype",
     description: "Purpose-built race cars for endurance events like Le Mans and WEC",
     href: "/category/prototype",
   },
   {
-    title: "Historic Racing",
-    description: "Classic and vintage race cars from motorsport's golden eras",
-    href: "/category/historic",
+    title: "GT",
+    description: "Grand touring cars built for both performance and comfort on long-distance races",
+    href: "/category/gt",
   },
   {
-    title: "Drift Cars",
+    title: "Stock Car",
+    description: "Modified production-based vehicles used in NASCAR and similar series",
+    href: "/category/stock-car",
+  },
+  {
+    title: "Touring",
+    description: "Production-based race cars used in touring car racing championships",
+    href: "/category/touring",
+  },
+  {
+    title: "Rally",
+    description: "Modified production cars designed for off-road racing across varied terrains",
+    href: "/category/rally",
+  },
+  {
+    title: "Drift",
     description: "Vehicles specially modified for the motorsport of drifting",
     href: "/category/drift",
   },
   {
-    title: "Off-Road Racing",
-    description: "Extreme vehicles for desert, baja, and all-terrain competitions",
-    href: "/category/off-road",
+    title: "Drag",
+    description: "Straight-line acceleration vehicles built for maximum speed over short distances",
+    href: "/category/drag",
   },
   {
-    title: "Karting",
+    title: "Vintage and Classic",
+    description: "Historic racing vehicles from motorsport's golden eras",
+    href: "/category/vintage-classic",
+  },
+  {
+    title: "Production",
+    description: "Lightly modified production cars for entry-level racing",
+    href: "/category/production",
+  },
+  {
+    title: "Karts",
     description: "Entry-level racing with small, open, four-wheeled vehicles",
-    href: "/category/karting",
+    href: "/category/karts",
   },
 ];
 
