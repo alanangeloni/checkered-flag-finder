@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 
 type CarListing = {
@@ -69,32 +70,34 @@ const carListings: CarListing[] = [
   },
 ];
 
-const CarListingCard = ({ listing }: { listing: CarListing }) => {
+const CarListingCard = ({ listing, index }: { listing: CarListing; index: number }) => {
   return (
-    <Card className="overflow-hidden">
-      <div className="relative">
-        <img
-          src={listing.image}
-          alt={listing.title}
-          className="w-full h-44 object-cover"
-        />
-        <div className="absolute top-2 left-2 bg-white rounded px-3 py-1 font-bold">
-          {listing.price}
+    <Link to={`/car-details/${index + 1}`}>
+      <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+        <div className="relative">
+          <img
+            src={listing.image}
+            alt={listing.title}
+            className="w-full h-44 object-cover"
+          />
+          <div className="absolute top-2 left-2 bg-white rounded px-3 py-1 font-bold">
+            {listing.price}
+          </div>
         </div>
-      </div>
-      <div className="p-4">
-        <h3 className="font-bold mb-1">{listing.title}</h3>
-        <div className="text-xs text-gray-600 space-x-1 mb-2">
-          {listing.details.map((detail, idx) => (
-            <React.Fragment key={idx}>
-              <span>{detail}</span>
-              {idx < listing.details.length - 1 && <span>•</span>}
-            </React.Fragment>
-          ))}
+        <div className="p-4">
+          <h3 className="font-bold mb-1">{listing.title}</h3>
+          <div className="text-xs text-gray-600 space-x-1 mb-2">
+            {listing.details.map((detail, idx) => (
+              <React.Fragment key={idx}>
+                <span>{detail}</span>
+                {idx < listing.details.length - 1 && <span>•</span>}
+              </React.Fragment>
+            ))}
+          </div>
+          <p className="text-xs text-gray-600">{listing.location}</p>
         </div>
-        <p className="text-xs text-gray-600">{listing.location}</p>
-      </div>
-    </Card>
+      </Card>
+    </Link>
   );
 };
 
@@ -104,7 +107,7 @@ const RecentlyListedCars = () => {
       <h2 className="text-2xl font-bold mb-6">Recently Listed Race Cars For Sale</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {carListings.slice(0, 8).map((listing, index) => (
-          <CarListingCard key={index} listing={listing} />
+          <CarListingCard key={index} listing={listing} index={index} />
         ))}
       </div>
     </div>

@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Input } from '@/components/ui/input';
@@ -178,31 +179,33 @@ const Listings = () => {
           {/* Listings grid with new card design */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sortedListings.map(car => (
-              <Card key={car.id} className="overflow-hidden rounded-lg hover:shadow-lg transition-shadow">
-                <div className="relative">
-                  <img 
-                    src={car.image} 
-                    alt={car.title} 
-                    className="w-full h-64 object-cover"
-                  />
-                  <div className="absolute bottom-0 left-0 bg-black bg-opacity-70 px-4 py-2 text-white text-xl font-bold">
-                    ${car.price.toLocaleString()}
+              <Link to={`/car-details/${car.id}`} key={car.id}>
+                <Card className="overflow-hidden rounded-lg hover:shadow-lg transition-shadow">
+                  <div className="relative">
+                    <img 
+                      src={car.image} 
+                      alt={car.title} 
+                      className="w-full h-64 object-cover"
+                    />
+                    <div className="absolute bottom-0 left-0 bg-black bg-opacity-70 px-4 py-2 text-white text-xl font-bold">
+                      ${car.price.toLocaleString()}
+                    </div>
                   </div>
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="text-xl font-bold mb-2">{car.title}</h3>
-                  <div className="flex justify-between items-center text-gray-600">
-                    <span>{car.location}</span>
-                    <span>{car.mileage.toLocaleString()} miles</span>
-                  </div>
-                  <Button 
-                    className="w-full mt-4 bg-black hover:bg-gray-800 text-white" 
-                    size="lg"
-                  >
-                    View Details
-                  </Button>
-                </CardContent>
-              </Card>
+                  <CardContent className="p-4">
+                    <h3 className="text-xl font-bold mb-2">{car.title}</h3>
+                    <div className="flex justify-between items-center text-gray-600">
+                      <span>{car.location}</span>
+                      <span>{car.mileage.toLocaleString()} miles</span>
+                    </div>
+                    <Button 
+                      className="w-full mt-4 bg-black hover:bg-gray-800 text-white" 
+                      size="lg"
+                    >
+                      View Details
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Link>
             ))}
           </div>
 

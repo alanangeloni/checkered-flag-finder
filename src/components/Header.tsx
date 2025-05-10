@@ -69,7 +69,9 @@ const Header = () => {
               Search
             </Button>
             <Button variant="outline" size="sm">Sign In</Button>
-            <Button size="sm" className="bg-racecar-red hover:bg-red-700">List Your Car</Button>
+            <Link to="/list-car">
+              <Button size="sm" className="bg-racecar-red hover:bg-red-700">List Your Car</Button>
+            </Link>
           </div>
         </div>
       </div>
