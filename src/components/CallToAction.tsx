@@ -1,10 +1,7 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
-
 const CallToAction = () => {
-  return (
-    <div className="container mx-auto px-4 py-10">
+  return <div className="container mx-auto px-4 py-10">
       <div className="bg-racecar-lightgray rounded-lg p-6 flex flex-col md:flex-row items-center justify-between">
         <div className="md:w-2/3 mb-6 md:mb-0">
           <h2 className="text-2xl font-bold mb-2">Ready to Sell Your Race Car?</h2>
@@ -17,15 +14,9 @@ const CallToAction = () => {
           </Button>
         </div>
         <div className="md:w-1/3">
-          <img
-            src="https://images.unsplash.com/photo-1487887235947-a955ef187fcc"
-            alt="Sell your racecar"
-            className="rounded-md w-full object-cover"
-          />
+          <img alt="Sell your racecar" className="rounded-md w-full object-cover" src="/lovable-uploads/bbe64c96-d6d8-468f-a9f2-238e03060cc4.png" />
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default CallToAction;
