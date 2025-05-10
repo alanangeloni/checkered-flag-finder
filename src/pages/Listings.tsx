@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -79,14 +80,15 @@ const Listings = () => {
   const [priceRange, setPriceRange] = useState<[number, number]>([100000, 300000]);
   const [showFilters, setShowFilters] = useState(false);
   const [sort, setSort] = useState('newest');
-  const [selectedCategory, setSelectedCategory] = useState("All Categories");
-  const [selectedSubcategory, setSelectedSubcategory] = useState("All Subcategories");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedSubcategory, setSelectedSubcategory] = useState("all");
   
   // State for database data
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
   const [subcategories, setSubcategories] = useState<{[key: string]: {id: string, name: string}[]}>({}); 
   const [listings, setListings] = useState(mockListings); // Start with mock data
   const [isLoading, setIsLoading] = useState(true);
+  const [availableSubcategories, setAvailableSubcategories] = useState<{id: string, name: string}[]>([]);
 
   // Min and max prices from data
   const minPrice = 100000;
@@ -121,10 +123,8 @@ const Listings = () => {
           all: [{id: 'all', name: 'All Subcategories'}],
         };
         
-        allCategories.forEach(category => {
-          if (category.id !== 'all') {
-            subcategoryMap[category.id] = [{id: 'all', name: 'All Subcategories'}];
-          }
+        categoriesData.forEach((category: any) => {
+          subcategoryMap[category.id] = [{id: 'all', name: 'All Subcategories'}];
         });
         
         subcategoriesData.forEach((sub: any) => {
@@ -142,6 +142,7 @@ const Listings = () => {
         });
         
         setSubcategories(subcategoryMap);
+        setAvailableSubcategories(subcategoryMap.all || []);
         
         // Later we would fetch actual car listings here
         // For now we'll continue using the mock data
@@ -161,8 +162,8 @@ const Listings = () => {
     const matchesSearch = listing.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          (listing.location && listing.location.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesPrice = listing.price >= priceRange[0] && listing.price <= priceRange[1];
-    const matchesCategory = selectedCategory === "All Categories" || listing.category === selectedCategory;
-    const matchesSubcategory = selectedSubcategory === "All Subcategories" || listing.subcategory === selectedSubcategory;
+    const matchesCategory = selectedCategory === "all" || listing.category === selectedCategory;
+    const matchesSubcategory = selectedSubcategory === "all" || listing.subcategory === selectedSubcategory;
     return matchesSearch && matchesPrice && matchesCategory && matchesSubcategory;
   });
 
@@ -176,9 +177,16 @@ const Listings = () => {
   });
 
   // Handle category change
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
-    setSelectedSubcategory("All Subcategories");
+  const handleCategoryChange = (categoryId: string) => {
+    setSelectedCategory(categoryId);
+    setSelectedSubcategory("all");
+    
+    // Update available subcategories based on the selected category
+    if (subcategories[categoryId]) {
+      setAvailableSubcategories(subcategories[categoryId]);
+    } else {
+      setAvailableSubcategories(subcategories.all || []);
+    }
   };
   
   return (
@@ -200,7 +208,7 @@ const Listings = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map(category => (
-                      <SelectItem key={category.id} value={category.id === 'all' ? 'All Categories' : category.name}>
+                      <SelectItem key={category.id} value={category.id}>
                         {category.name}
                       </SelectItem>
                     ))}
@@ -210,20 +218,17 @@ const Listings = () => {
                 <Select 
                   value={selectedSubcategory} 
                   onValueChange={setSelectedSubcategory}
-                  disabled={selectedCategory === "All Categories" || isLoading}
+                  disabled={selectedCategory === "all" || isLoading || availableSubcategories.length === 0}
                 >
                   <SelectTrigger className="bg-white/20 border-0 text-white backdrop-blur-sm">
                     <SelectValue placeholder="Subcategory" />
                   </SelectTrigger>
                   <SelectContent>
-                    {subcategories[selectedCategory] ? 
-                      subcategories[selectedCategory].map(sub => (
-                        <SelectItem key={sub.id} value={sub.id === 'all' ? 'All Subcategories' : sub.name}>
-                          {sub.name}
-                        </SelectItem>
-                      )) : 
-                      <SelectItem value="All Subcategories">All Subcategories</SelectItem>
-                    }
+                    {availableSubcategories.map(sub => (
+                      <SelectItem key={sub.id} value={sub.id}>
+                        {sub.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
 
@@ -285,8 +290,9 @@ const Listings = () => {
                         setSearchTerm('');
                         setPriceRange([minPrice, maxPrice]);
                         setSort('newest');
-                        setSelectedCategory("All Categories");
-                        setSelectedSubcategory("All Subcategories");
+                        setSelectedCategory("all");
+                        setSelectedSubcategory("all");
+                        setAvailableSubcategories(subcategories.all || []);
                       }}
                     >
                       Reset All
@@ -347,8 +353,9 @@ const Listings = () => {
                 onClick={() => {
                   setSearchTerm('');
                   setPriceRange([minPrice, maxPrice]);
-                  setSelectedCategory("All Categories");
-                  setSelectedSubcategory("All Subcategories");
+                  setSelectedCategory("all");
+                  setSelectedSubcategory("all");
+                  setAvailableSubcategories(subcategories.all || []);
                 }}
               >
                 Reset Filters
