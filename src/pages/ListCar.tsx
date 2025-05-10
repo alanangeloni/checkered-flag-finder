@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -12,10 +11,11 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { UploadCloud } from 'lucide-react';
+import { UploadCloud, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 // Updated categories data
 const categories = [
@@ -203,7 +203,7 @@ const ListCar = () => {
           model: values.model,
           year: values.year ? parseInt(values.year) : null,
           category_id: values.categoryId,
-          subcategory_id: values.subcategoryId,
+          subcategory_id: values.subcategoryId || null, // Ensure it's null if empty
           price: values.price ? parseFloat(values.price) : 0,
           short_description: values.shortDescription,
           detailed_description: values.detailedDescription,
@@ -270,6 +270,25 @@ const ListCar = () => {
     URL.revokeObjectURL(newPreviewImages[index]);
     newPreviewImages.splice(index, 1);
     setPreviewImages(newPreviewImages);
+  };
+  
+  // Handle drag end event for reordering images
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(previewImages);
+    const files = Array.from(imageFiles);
+    
+    // Reorder preview images
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    // Reorder image files to match preview order
+    const [reorderedFile] = files.splice(result.source.index, 1);
+    files.splice(result.destination.index, 0, reorderedFile);
+    
+    setPreviewImages(items);
+    setImageFiles(files);
   };
 
   return (
@@ -620,7 +639,7 @@ const ListCar = () => {
                 </div>
               </div>
 
-              {/* Image Upload */}
+              {/* Image Upload - Updated with drag and drop functionality */}
               <div>
                 <h2 className="text-xl font-semibold mb-4">Images</h2>
                 <Label htmlFor="images">Car Images</Label>
@@ -648,26 +667,51 @@ const ListCar = () => {
                 </div>
 
                 {previewImages.length > 0 && (
-                  <div className="mt-4 grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                    {previewImages.map((src, index) => (
-                      <div key={index} className="relative">
-                        <img 
-                          src={src} 
-                          alt={`Car preview ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-md"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-1 right-1 h-5 w-5"
-                          onClick={() => removeImage(index)}
+                  <DragDropContext onDragEnd={handleDragEnd}>
+                    <Droppable droppableId="images" direction="horizontal">
+                      {(provided) => (
+                        <div 
+                          className="mt-4 grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4" 
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
                         >
-                          ×
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
+                          {previewImages.map((src, index) => (
+                            <Draggable key={`image-${index}`} draggableId={`image-${index}`} index={index}>
+                              {(provided) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className="relative group"
+                                >
+                                  <div 
+                                    {...provided.dragHandleProps}
+                                    className="absolute top-1 left-1 bg-black/50 p-1 rounded-full text-white cursor-move opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                  >
+                                    <GripVertical size={14} />
+                                  </div>
+                                  <img 
+                                    src={src} 
+                                    alt={`Car preview ${index + 1}`}
+                                    className="w-full h-24 object-cover rounded-md"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="destructive"
+                                    size="icon"
+                                    className="absolute top-1 right-1 h-5 w-5"
+                                    onClick={() => removeImage(index)}
+                                  >
+                                    ×
+                                  </Button>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
                 )}
               </div>
 
