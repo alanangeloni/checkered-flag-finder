@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -355,10 +356,10 @@ const CarDetails = () => {
           <p className="text-gray-600">{carListing?.short_description}</p>
         </div>
         
-        {/* Main content area */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Car details area (3/4 width on large screens) */}
-          <div className="lg:col-span-3">
+        {/* Main content area - Two column layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left column - Car details (2/3 width on large screens) */}
+          <div className="lg:col-span-2">
             {/* Image Gallery Component */}
             <CarImageGallery 
               images={images} 
@@ -366,39 +367,42 @@ const CarDetails = () => {
               isFeatured={carListing?.featured || false} 
             />
             
-            {/* Price and Contact Info Component */}
-            <CarPriceInfo 
-              price={carListing?.price || 0}
-              raceCarType={carListing?.race_car_type}
-              sellerType={carListing?.seller_type}
-              createdAt={carListing?.created_at || new Date().toISOString()}
-              onContactClick={handleContactClick}
-            />
-            
-            {/* Vehicle Specifications Component */}
-            <CarSpecifications carListing={carListing} />
-            
-            {/* Description Component */}
-            <CarDescription 
-              detailedDescription={carListing?.detailed_description}
-              shortDescription={carListing?.short_description}
-              raceCarType={carListing?.race_car_type}
-              categoryName={carListing?.category_name}
-              subcategoryName={carListing?.subcategory_name}
-            />
+            {/* Car Details Components - Below Images */}
+            <div className="mt-6">
+              {/* Price and Contact Info Component */}
+              <CarPriceInfo 
+                price={carListing?.price || 0}
+                raceCarType={carListing?.race_car_type}
+                sellerType={carListing?.seller_type}
+                createdAt={carListing?.created_at || new Date().toISOString()}
+                onContactClick={handleContactClick}
+              />
+              
+              {/* Vehicle Specifications Component */}
+              <CarSpecifications carListing={carListing} />
+              
+              {/* Description Component */}
+              <CarDescription 
+                detailedDescription={carListing?.detailed_description}
+                shortDescription={carListing?.short_description}
+                raceCarType={carListing?.race_car_type}
+                categoryName={carListing?.category_name}
+                subcategoryName={carListing?.subcategory_name}
+              />
 
-            {/* Action Buttons */}
-            <div className="flex gap-4 justify-end">
-              <Button variant="outline" size="icon">
-                <Share2 className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon">
-                <Heart className="h-4 w-4" />
-              </Button>
+              {/* Action Buttons */}
+              <div className="flex gap-4 justify-end mb-6">
+                <Button variant="outline" size="icon">
+                  <Share2 className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon">
+                  <Heart className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
           
-          {/* Related listings sidebar (1/4 width on large screens) */}
+          {/* Right column - Related listings (1/3 width on large screens) */}
           <div className="lg:col-span-1">
             <RelatedCarListings listings={relatedListings} currentCarId={id || ''} />
           </div>
