@@ -50,7 +50,9 @@ const CarDescription = ({
         )}
         
         {/* Description Text */}
-        <p className="text-gray-700 whitespace-pre-line">{detailedDescription || shortDescription}</p>
+        <div className="text-gray-700 whitespace-pre-line">
+          {detailedDescription || shortDescription || "No description available"}
+        </div>
       </CardContent>
     </Card>
   );
