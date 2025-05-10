@@ -52,7 +52,7 @@ const HomeBlogSection = () => {
         {/* Featured article - with height adjusted to match sidebar */}
         <div className="lg:col-span-7">
           <Link to={`/blog/${mainPost.slug}`} className="block h-full">
-            <div className="rounded-lg overflow-hidden shadow-md h-80 relative">
+            <div className="rounded-lg overflow-hidden shadow-md h-[21.5rem] relative">
               <img 
                 src={mainPost.image} 
                 alt={mainPost.title} 
@@ -66,7 +66,7 @@ const HomeBlogSection = () => {
         </div>
         
         {/* Sidebar articles - showing all sidebar articles */}
-        <div className="lg:col-span-5 space-y-6 flex flex-col h-80 overflow-y-auto">
+        <div className="lg:col-span-5 space-y-6 flex flex-col h-[21.5rem]">
           {sidebarPosts.map((post) => (
             <Link key={post.id} to={`/blog/${post.slug}`} className="block">
               <div className="flex items-start space-x-4">
