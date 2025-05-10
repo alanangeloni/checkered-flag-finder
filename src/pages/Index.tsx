@@ -7,6 +7,7 @@ import PopularCategories from '@/components/PopularCategories';
 import RecentlyListedCars from '@/components/RecentlyListedCars';
 import CallToAction from '@/components/CallToAction';
 import PopularSearches from '@/components/PopularSearches';
+import HomeBlogSection from '@/components/HomeBlogSection';
 
 const Index = () => {
   return (
@@ -17,6 +18,7 @@ const Index = () => {
         <PopularCategories />
         <RecentlyListedCars />
         <CallToAction />
+        <HomeBlogSection />
         <PopularSearches />
       </main>
       <Footer />
