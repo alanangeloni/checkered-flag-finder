@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { CarListingWithImages } from '@/types/customTypes';
 import { supabase } from '@/integrations/supabase/client';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 const HeroSection = () => {
   const [premiumListing, setPremiumListing] = useState<CarListingWithImages | null>(null);
@@ -65,17 +66,18 @@ const HeroSection = () => {
         <p className="text-gray-600">Explore our finest racing car available</p>
       </div>
       
-      <div className="flex flex-col md:flex-row gap-4">
-        {/* Main large image - fixed height to match grid */}
-        <div className="md:w-3/5 relative group h-full">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        {/* Main large image - now in a 3-column grid space */}
+        <div className="md:col-span-3 relative group">
           <Link to={premiumListing ? `/car-details/${premiumListing.id}` : "/listings"}>
-            <div className="relative rounded-md overflow-hidden h-full">
-              <img 
-                src={premiumListing?.primary_image || fallbackMainImage} 
-                alt={premiumListing?.name || "Premium race car on track"} 
-                className="rounded-md w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                style={{ aspectRatio: "1/1", objectFit: "cover" }}
-              />
+            <div className="relative rounded-md overflow-hidden">
+              <AspectRatio ratio={1/1}>
+                <img 
+                  src={premiumListing?.primary_image || fallbackMainImage} 
+                  alt={premiumListing?.name || "Premium race car on track"} 
+                  className="rounded-md w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+              </AspectRatio>
               {premiumListing && (
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 text-white">
                   <h3 className="text-xl md:text-2xl font-bold">{premiumListing.name}</h3>
@@ -97,40 +99,47 @@ const HeroSection = () => {
           </Link>
         </div>
         
-        {/* Right side with 4 smaller images - made explicitly same height as left side */}
-        <div className="md:w-2/5 h-full">
-          {/* 2x2 grid of smaller images */}
+        {/* Right side with 4 smaller images - now in a 2-column grid space */}
+        <div className="md:col-span-2">
           <div className="grid grid-cols-2 gap-4 h-full">
             {/* Top row */}
-            <div className="aspect-square">
-              <img 
-                src={fallbackSmallImages[0]} 
-                alt="Race car angle view" 
-                className="rounded-md w-full h-full object-cover"
-              />
+            <div>
+              <AspectRatio ratio={1/1}>
+                <img 
+                  src={fallbackSmallImages[0]} 
+                  alt="Race car angle view" 
+                  className="rounded-md w-full h-full object-cover"
+                />
+              </AspectRatio>
             </div>
-            <div className="aspect-square">
-              <img 
-                src={fallbackSmallImages[1]} 
-                alt="Race car rear view" 
-                className="rounded-md w-full h-full object-cover"
-              />
+            <div>
+              <AspectRatio ratio={1/1}>
+                <img 
+                  src={fallbackSmallImages[1]} 
+                  alt="Race car rear view" 
+                  className="rounded-md w-full h-full object-cover"
+                />
+              </AspectRatio>
             </div>
             
             {/* Bottom row */}
-            <div className="aspect-square">
-              <img 
-                src={fallbackSmallImages[2]} 
-                alt="Race car engine" 
-                className="rounded-md w-full h-full object-cover"
-              />
+            <div>
+              <AspectRatio ratio={1/1}>
+                <img 
+                  src={fallbackSmallImages[2]} 
+                  alt="Race car engine" 
+                  className="rounded-md w-full h-full object-cover"
+                />
+              </AspectRatio>
             </div>
-            <div className="aspect-square">
-              <img 
-                src={fallbackSmallImages[3]} 
-                alt="Race car cockpit" 
-                className="rounded-md w-full h-full object-cover"
-              />
+            <div>
+              <AspectRatio ratio={1/1}>
+                <img 
+                  src={fallbackSmallImages[3]} 
+                  alt="Race car cockpit" 
+                  className="rounded-md w-full h-full object-cover"
+                />
+              </AspectRatio>
             </div>
           </div>
         </div>
