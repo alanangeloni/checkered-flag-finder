@@ -40,9 +40,9 @@ const featuredPosts = [
 ];
 
 const HomeBlogSection = () => {
-  // Get the main featured post and exactly 3 for the sidebar
+  // Get the main featured post and the remaining posts for the sidebar
   const mainPost = featuredPosts[0];
-  const sidebarPosts = featuredPosts.slice(1, 4); // Only get posts 2-4 for the sidebar
+  const sidebarPosts = featuredPosts.slice(1, 4); // Get posts 2-4 for the sidebar
   
   return (
     <div className="container mx-auto px-4 py-12 bg-white">
@@ -52,7 +52,7 @@ const HomeBlogSection = () => {
         {/* Featured article - with fixed height */}
         <div className="lg:col-span-7">
           <Link to={`/blog/${mainPost.slug}`} className="block h-full">
-            <div className="rounded-lg overflow-hidden shadow-md h-64 relative">
+            <div className="rounded-lg overflow-hidden shadow-md h-96 relative">
               <img 
                 src={mainPost.image} 
                 alt={mainPost.title} 
@@ -65,8 +65,8 @@ const HomeBlogSection = () => {
           </Link>
         </div>
         
-        {/* Sidebar articles - showing exactly 3 articles */}
-        <div className="lg:col-span-5 space-y-6 flex flex-col justify-start h-64 overflow-hidden">
+        {/* Sidebar articles - showing all sidebar articles */}
+        <div className="lg:col-span-5 space-y-6 flex flex-col h-96 overflow-y-auto">
           {sidebarPosts.map((post) => (
             <Link key={post.id} to={`/blog/${post.slug}`} className="block">
               <div className="flex items-start space-x-4">
