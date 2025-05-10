@@ -3,8 +3,7 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, GripVertical } from 'lucide-react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { UploadCloud, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface ImageUploadSectionProps {
   previewImages: string[];
@@ -19,6 +18,25 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
   onRemoveImage,
   onDragEnd
 }) => {
+  // Simple reordering functions until react-beautiful-dnd is properly installed
+  const moveImageUp = (index: number) => {
+    if (index <= 0) return;
+    const result = {
+      source: { index },
+      destination: { index: index - 1 }
+    };
+    onDragEnd(result);
+  };
+
+  const moveImageDown = (index: number) => {
+    if (index >= previewImages.length - 1) return;
+    const result = {
+      source: { index },
+      destination: { index: index + 1 }
+    };
+    onDragEnd(result);
+  };
+
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Images</h2>
@@ -47,51 +65,49 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
       </div>
 
       {previewImages.length > 0 && (
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="images" direction="horizontal">
-            {(provided) => (
-              <div 
-                className="mt-4 grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4" 
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-              >
-                {previewImages.map((src, index) => (
-                  <Draggable key={`image-${index}`} draggableId={`image-${index}`} index={index}>
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        className="relative group"
-                      >
-                        <div 
-                          {...provided.dragHandleProps}
-                          className="absolute top-1 left-1 bg-black/50 p-1 rounded-full text-white cursor-move opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                        >
-                          <GripVertical size={14} />
-                        </div>
-                        <img 
-                          src={src} 
-                          alt={`Car preview ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-md"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="icon"
-                          className="absolute top-1 right-1 h-5 w-5"
-                          onClick={() => onRemoveImage(index)}
-                        >
-                          ×
-                        </Button>
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          {previewImages.map((src, index) => (
+            <div key={`image-${index}`} className="relative group">
+              <div className="absolute top-1 left-1 bg-black/50 p-1 rounded-full text-white z-10 flex gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 p-0 text-white hover:text-white hover:bg-black/30"
+                  onClick={() => moveImageUp(index)}
+                  disabled={index === 0}
+                >
+                  <ArrowUp size={12} />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 p-0 text-white hover:text-white hover:bg-black/30"
+                  onClick={() => moveImageDown(index)}
+                  disabled={index === previewImages.length - 1}
+                >
+                  <ArrowDown size={12} />
+                </Button>
+                <GripVertical size={14} className="cursor-move" />
               </div>
-            )}
-          </Droppable>
-        </DragDropContext>
+              <img 
+                src={src} 
+                alt={`Car preview ${index + 1}`}
+                className="w-full h-24 object-cover rounded-md"
+              />
+              <Button
+                type="button"
+                variant="destructive"
+                size="icon"
+                className="absolute top-1 right-1 h-5 w-5"
+                onClick={() => onRemoveImage(index)}
+              >
+                ×
+              </Button>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
