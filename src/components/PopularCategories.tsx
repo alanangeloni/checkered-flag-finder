@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Link } from 'react-router-dom';
@@ -60,11 +59,6 @@ const categories: CategoryType[] = [
     image: 'https://images.unsplash.com/photo-1553440569-bcc63803a83d',
     slug: 'production',
   },
-  {
-    title: 'Karts',
-    image: 'https://images.unsplash.com/photo-1612521564270-312700c43a97',
-    slug: 'karts',
-  },
 ];
 
 const CategoryCard = ({ category }: { category: CategoryType }) => {
@@ -92,7 +86,7 @@ const PopularCategories = () => {
   return (
     <div className="container mx-auto px-4 py-6">
       <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Popular categories</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
         {categories.slice(0, displayCount).map((category, index) => (
           <CategoryCard key={index} category={category} />
         ))}
