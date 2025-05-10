@@ -124,9 +124,13 @@ export type Database = {
       }
       car_listings: {
         Row: {
+          brakes: string | null
           category_id: string | null
           created_at: string
           detailed_description: string | null
+          drivetrain: string | null
+          engine_hours: number | null
+          engine_specs: string | null
           featured: boolean
           id: string
           location: string | null
@@ -136,17 +140,27 @@ export type Database = {
           name: string
           premium: boolean
           price: number
+          race_car_type: string | null
+          safety_equipment: string | null
+          seller_type: string | null
           short_description: string
           status: string
           subcategory_id: string | null
+          suspension: string | null
+          transmission: string | null
           updated_at: string
           user_id: string
+          weight: string | null
           year: number | null
         }
         Insert: {
+          brakes?: string | null
           category_id?: string | null
           created_at?: string
           detailed_description?: string | null
+          drivetrain?: string | null
+          engine_hours?: number | null
+          engine_specs?: string | null
           featured?: boolean
           id?: string
           location?: string | null
@@ -156,17 +170,27 @@ export type Database = {
           name: string
           premium?: boolean
           price: number
+          race_car_type?: string | null
+          safety_equipment?: string | null
+          seller_type?: string | null
           short_description: string
           status?: string
           subcategory_id?: string | null
+          suspension?: string | null
+          transmission?: string | null
           updated_at?: string
           user_id: string
+          weight?: string | null
           year?: number | null
         }
         Update: {
+          brakes?: string | null
           category_id?: string | null
           created_at?: string
           detailed_description?: string | null
+          drivetrain?: string | null
+          engine_hours?: number | null
+          engine_specs?: string | null
           featured?: boolean
           id?: string
           location?: string | null
@@ -176,11 +200,17 @@ export type Database = {
           name?: string
           premium?: boolean
           price?: number
+          race_car_type?: string | null
+          safety_equipment?: string | null
+          seller_type?: string | null
           short_description?: string
           status?: string
           subcategory_id?: string | null
+          suspension?: string | null
+          transmission?: string | null
           updated_at?: string
           user_id?: string
+          weight?: string | null
           year?: number | null
         }
         Relationships: [

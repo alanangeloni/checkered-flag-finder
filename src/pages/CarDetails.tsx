@@ -11,85 +11,83 @@ import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table';
 import { MessageCircle, Share2, Heart, ChevronLeft, ChevronRight, Tag, FileText, User } from 'lucide-react';
 import ContactSellerDialog from '@/components/ContactSellerDialog';
 import { toast } from 'sonner';
-
-// Mock data - in a real app this would come from an API
-const mockCarData = {
-  id: '1',
-  title: '2024 Porsche 911 GT3 Track Car',
-  subtitle: '~200 Engine Hours, Track-Ready, Built for Performance',
-  price: '$125,000',
-  endingDate: 'May 14th at 1:30 PM EDT',
-  images: [
-    'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5',
-    'https://images.unsplash.com/photo-1487887235947-a955ef187fcc',
-    'https://images.unsplash.com/photo-1500673922987-e212871fec22',
-    'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf',
-    'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7',
-    'https://images.unsplash.com/photo-1583121274602-3e2820c69888',
-  ],
-  description: "This Porsche 911 GT3 race car is in excellent condition and ready for the track. It comes with a complete service history and has been maintained by professional mechanics.",
-  details: {
-    year: '2024',
-    make: 'Porsche',
-    model: '911 GT3',
-    engineHours: '200 hours',
-    engineSpecs: '4.0L Flat-6, 502hp',
-    drivetrain: 'Rear-wheel drive',
-    transmission: 'Sequential Racing Gearbox',
-    raceCarType: 'GT3 Class',
-    safetyEquipment: 'Full Roll Cage, Fire Suppression',
-    suspension: 'Racing Coilovers, Adjustable',
-    brakes: 'Carbon Ceramic, 6-piston',
-    tires: 'Michelin Racing Slicks',
-    weight: '2,800 lbs',
-    location: 'FL Lauderdale, FL 33809',
-    sellerType: 'Professional Race Team',
-  },
-  highlights: [
-    'Track-ready GT3 class race car',
-    'Professional racing history',
-    'Recently serviced with new components',
-    'Includes spare parts package',
-    'Full documentation and race setup data'
-  ],
-  seller: {
-    id: '123',
-    name: 'Pro Racing Team',
-    joinedDate: 'May 2023',
-    listings: 5,
-    username: 'mark82'
-  },
-  sellerNotes: "This Porsche 911 GT3 race car has been meticulously maintained and optimized for track performance. It features a full racing setup with adjustable suspension, race-spec brake system, and a comprehensive data logging system. The car has been used in professional GT3 events and comes with complete documentation including setup sheets and maintenance records. Ready to compete in GT3 class events or for serious track day enthusiasts who demand the highest level of performance."
-};
+import { CarListingWithImages } from '@/types/customTypes';
 
 const CarDetails = () => {
   const { id } = useParams();
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [carListing, setCarListing] = useState<CarListingWithImages | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const fetchCarDetails = async () => {
+      try {
+        setLoading(true);
+        
+        // Check if user is logged in
+        const { data: { session } } = await supabase.auth.getSession();
+        setIsLoggedIn(!!session);
+
+        // Fetch car details
+        const { data: carData, error: carError } = await supabase
+          .from('car_listings')
+          .select(`
+            *,
+            images:car_images(*),
+            category:categories(name),
+            subcategory:subcategories(name)
+          `)
+          .eq('id', id)
+          .single();
+
+        if (carError) throw carError;
+        
+        if (!carData) {
+          setError('Car listing not found');
+          setCarListing(null);
+        } else {
+          // Format the data
+          const formattedCar = {
+            ...carData,
+            category_name: carData.category?.name,
+            subcategory_name: carData.subcategory?.name,
+            primary_image: carData.images && carData.images.length > 0 
+              ? carData.images.find((img: any) => img.is_primary)?.image_url || carData.images[0].image_url
+              : null
+          };
+          
+          setCarListing(formattedCar as CarListingWithImages);
+        }
+      } catch (err: any) {
+        console.error('Error fetching car details:', err);
+        setError(err.message || 'Failed to load car details');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchCarDetails();
+    }
+  }, [id]);
+
   const nextImage = () => {
-    setActiveImageIndex((prev) => (prev + 1) % mockCarData.images.length);
+    if (!carListing?.images || carListing.images.length === 0) return;
+    setActiveImageIndex((prev) => (prev + 1) % carListing.images.length);
   };
 
   const prevImage = () => {
-    setActiveImageIndex((prev) => (prev - 1 + mockCarData.images.length) % mockCarData.images.length);
+    if (!carListing?.images || carListing.images.length === 0) return;
+    setActiveImageIndex((prev) => (prev - 1 + carListing.images.length) % carListing.images.length);
   };
   
   const selectImage = (index: number) => {
     setActiveImageIndex(index);
   };
-
-  useEffect(() => {
-    // Check if user is logged in
-    const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setIsLoggedIn(!!session);
-    };
-    
-    checkAuth();
-  }, []);
 
   const handleContactClick = () => {
     if (!isLoggedIn) {
@@ -100,14 +98,54 @@ const CarDetails = () => {
     setIsContactModalOpen(true);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Header />
+        <main className="flex-grow container mx-auto px-4 py-6 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-racecar-red mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading car details...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !carListing) {
+    return (
+      <div className="min-h-screen flex flex-col bg-gray-50">
+        <Header />
+        <main className="flex-grow container mx-auto px-4 py-6 flex items-center justify-center">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-6 text-center">
+              <h2 className="text-xl font-bold mb-2">Error</h2>
+              <p className="text-gray-600 mb-4">{error || 'Car listing not found'}</p>
+              <Button onClick={() => navigate('/listings')}>
+                View All Listings
+              </Button>
+            </CardContent>
+          </Card>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Extract images from the car listing
+  const images = carListing.images && carListing.images.length > 0 
+    ? carListing.images.map(img => img.image_url)
+    : [];
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
       <main className="flex-grow container mx-auto px-4 py-6">
         {/* Title and subtitle */}
         <div className="mb-4">
-          <h1 className="text-2xl md:text-3xl font-bold">{mockCarData.title}</h1>
-          <p className="text-gray-600">{mockCarData.subtitle}</p>
+          <h1 className="text-2xl md:text-3xl font-bold">{carListing.name}</h1>
+          <p className="text-gray-600">{carListing.short_description}</p>
         </div>
         
         <div className="grid grid-cols-1 gap-6">
@@ -119,75 +157,83 @@ const CarDetails = () => {
                 {/* Large Main Image */}
                 <div className="flex-grow">
                   <div className="relative rounded-lg overflow-hidden bg-gray-100 h-[500px] w-full">
-                    <img 
-                      src={mockCarData.images[activeImageIndex]} 
-                      alt={mockCarData.title} 
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      onClick={prevImage}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white"
-                      aria-label="Previous image"
-                    >
-                      <ChevronLeft size={20} />
-                    </button>
-                    <button
-                      onClick={nextImage}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white"
-                      aria-label="Next image"
-                    >
-                      <ChevronRight size={20} />
-                    </button>
-                    <div className="absolute top-2 left-2 bg-black/50 text-white px-3 py-1 rounded-md text-xs">
-                      FEATURED
-                    </div>
-                    <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-xs">
-                      {activeImageIndex + 1}/{mockCarData.images.length}
-                    </div>
+                    {images.length > 0 ? (
+                      <img 
+                        src={images[activeImageIndex]} 
+                        alt={carListing.name} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                        <p className="text-gray-500">No image available</p>
+                      </div>
+                    )}
+                    {images.length > 1 && (
+                      <>
+                        <button
+                          onClick={prevImage}
+                          className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white"
+                          aria-label="Previous image"
+                        >
+                          <ChevronLeft size={20} />
+                        </button>
+                        <button
+                          onClick={nextImage}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 hover:bg-black/70 text-white"
+                          aria-label="Next image"
+                        >
+                          <ChevronRight size={20} />
+                        </button>
+                      </>
+                    )}
+                    {carListing.featured && (
+                      <div className="absolute top-2 left-2 bg-black/50 text-white px-3 py-1 rounded-md text-xs">
+                        FEATURED
+                      </div>
+                    )}
+                    {images.length > 0 && (
+                      <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-xs">
+                        {activeImageIndex + 1}/{images.length}
+                      </div>
+                    )}
                   </div>
                 </div>
                 
                 {/* Thumbnails Grid - Right Side Column */}
-                <div className="hidden md:grid grid-rows-6 gap-2 w-[180px]">
-                  {mockCarData.images.slice(0, 6).map((image, index) => (
-                    <div 
-                      key={index}
-                      className={`cursor-pointer rounded-md overflow-hidden h-[80px] ${index === activeImageIndex ? 'ring-2 ring-racecar-red' : ''}`}
-                      onClick={() => selectImage(index)}
-                    >
-                      <img src={image} alt={`${mockCarData.title} thumbnail ${index + 1}`} className="w-full h-full object-cover" />
-                      {index === 0 && (
-                        <div className="absolute top-1 left-1 bg-black/50 text-white px-2 py-0.5 rounded text-xs">
-                          Exterior (34)
-                        </div>
-                      )}
-                      {index === 4 && (
-                        <div className="absolute top-1 left-1 bg-black/50 text-white px-2 py-0.5 rounded text-xs">
-                          Interior (49)
-                        </div>
-                      )}
-                      {index === 5 && (
-                        <div className="absolute right-2 bottom-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
-                          All Photos (99)
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                {images.length > 0 && (
+                  <div className="hidden md:grid grid-rows-6 gap-2 w-[180px]">
+                    {images.slice(0, 6).map((image, index) => (
+                      <div 
+                        key={index}
+                        className={`cursor-pointer rounded-md overflow-hidden h-[80px] ${index === activeImageIndex ? 'ring-2 ring-racecar-red' : ''}`}
+                        onClick={() => selectImage(index)}
+                      >
+                        <img src={image} alt={`${carListing.name} thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                        {index === 5 && images.length > 6 && (
+                          <div className="absolute right-2 bottom-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                            All Photos ({images.length})
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               
               {/* Mobile Thumbnails Grid - Below Main Image */}
-              <div className="grid grid-cols-6 gap-2 mt-2 md:hidden">
-                {mockCarData.images.map((image, index) => (
-                  <div 
-                    key={index}
-                    className={`cursor-pointer rounded-md overflow-hidden h-16 ${index === activeImageIndex ? 'ring-2 ring-racecar-red' : ''}`}
-                    onClick={() => selectImage(index)}
-                  >
-                    <img src={image} alt={`${mockCarData.title} thumbnail ${index + 1}`} className="w-full h-full object-cover" />
-                  </div>
-                ))}
-              </div>
+              {images.length > 0 && (
+                <div className="grid grid-cols-6 gap-2 mt-2 md:hidden">
+                  {images.map((image, index) => (
+                    <div 
+                      key={index}
+                      className={`cursor-pointer rounded-md overflow-hidden h-16 ${index === activeImageIndex ? 'ring-2 ring-racecar-red' : ''}`}
+                      onClick={() => selectImage(index)}
+                    >
+                      <img src={image} alt={`${carListing.name} thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             
             {/* Price and Contact Info Bar */}
@@ -199,7 +245,7 @@ const CarDetails = () => {
                       <Tag size={18} className="text-gray-500" />
                       <div>
                         <div className="text-sm text-gray-500">Price</div>
-                        <div className="font-semibold text-xl">{mockCarData.price}</div>
+                        <div className="font-semibold text-xl">${carListing.price?.toLocaleString()}</div>
                       </div>
                     </div>
                     
@@ -207,15 +253,15 @@ const CarDetails = () => {
                       <FileText size={18} className="text-gray-500" />
                       <div>
                         <div className="text-sm text-gray-500">Racing Class</div>
-                        <div className="font-semibold">{mockCarData.details.raceCarType}</div>
+                        <div className="font-semibold">{carListing.race_car_type || 'N/A'}</div>
                       </div>
                     </div>
                     
                     <div className="flex items-center gap-2">
-                      <MessageCircle size={18} className="text-gray-500" />
+                      <User size={18} className="text-gray-500" />
                       <div>
-                        <div className="text-sm text-gray-500">Team</div>
-                        <div className="font-semibold">{mockCarData.seller.username}</div>
+                        <div className="text-sm text-gray-500">Seller Type</div>
+                        <div className="font-semibold">{carListing.seller_type || 'N/A'}</div>
                       </div>
                     </div>
                   </div>
@@ -233,7 +279,7 @@ const CarDetails = () => {
                 </div>
                 
                 <div className="text-sm text-gray-500 mt-4 text-right">
-                  Listed on {mockCarData.endingDate}
+                  Listed on {new Date(carListing.created_at).toLocaleDateString()}
                 </div>
               </CardContent>
             </Card>
@@ -246,39 +292,31 @@ const CarDetails = () => {
                     <TableBody>
                       <TableRow>
                         <TableCell className="py-2 font-medium text-gray-500">Make</TableCell>
-                        <TableCell className="py-2">{mockCarData.details.make}</TableCell>
+                        <TableCell className="py-2">{carListing.make}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="py-2 font-medium text-gray-500">Model</TableCell>
-                        <TableCell className="py-2">{mockCarData.details.model}</TableCell>
+                        <TableCell className="py-2">{carListing.model || 'N/A'}</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        <TableCell className="py-2 font-medium text-gray-500">Year</TableCell>
+                        <TableCell className="py-2">{carListing.year || 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="py-2 font-medium text-gray-500">Engine Hours</TableCell>
-                        <TableCell className="py-2">{mockCarData.details.engineHours}</TableCell>
+                        <TableCell className="py-2">{carListing.engine_hours || 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="py-2 font-medium text-gray-500">Engine Specs</TableCell>
-                        <TableCell className="py-2">{mockCarData.details.engineSpecs}</TableCell>
+                        <TableCell className="py-2">{carListing.engine_specs || 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell className="py-2 font-medium text-gray-500">Race Car Type</TableCell>
-                        <TableCell className="py-2">{mockCarData.details.raceCarType}</TableCell>
+                        <TableCell className="py-2 font-medium text-gray-500">Category</TableCell>
+                        <TableCell className="py-2">{carListing.category_name || 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell className="py-2 font-medium text-gray-500">Location</TableCell>
-                        <TableCell className="py-2">{mockCarData.details.location}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="py-2 font-medium text-gray-500">Seller</TableCell>
-                        <TableCell className="py-2 flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs">
-                            {mockCarData.seller.username.charAt(0)}
-                          </div>
-                          <span>{mockCarData.seller.username}</span>
-                          <Button variant="link" size="sm" className="p-0 h-auto text-xs underline text-blue-600" onClick={handleContactClick}>
-                            Contact
-                          </Button>
-                        </TableCell>
+                        <TableCell className="py-2 font-medium text-gray-500">Subcategory</TableCell>
+                        <TableCell className="py-2">{carListing.subcategory_name || 'N/A'}</TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
@@ -288,32 +326,36 @@ const CarDetails = () => {
                   <Table>
                     <TableBody>
                       <TableRow>
+                        <TableCell className="py-2 font-medium text-gray-500">Race Car Type</TableCell>
+                        <TableCell className="py-2">{carListing.race_car_type || 'N/A'}</TableCell>
+                      </TableRow>
+                      <TableRow>
                         <TableCell className="py-2 font-medium text-gray-500">Drivetrain</TableCell>
-                        <TableCell className="py-2">{mockCarData.details.drivetrain}</TableCell>
+                        <TableCell className="py-2">{carListing.drivetrain || 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="py-2 font-medium text-gray-500">Transmission</TableCell>
-                        <TableCell className="py-2">{mockCarData.details.transmission}</TableCell>
+                        <TableCell className="py-2">{carListing.transmission || 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="py-2 font-medium text-gray-500">Weight</TableCell>
-                        <TableCell className="py-2">{mockCarData.details.weight}</TableCell>
+                        <TableCell className="py-2">{carListing.weight || 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="py-2 font-medium text-gray-500">Safety Equipment</TableCell>
-                        <TableCell className="py-2">{mockCarData.details.safetyEquipment}</TableCell>
+                        <TableCell className="py-2">{carListing.safety_equipment || 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="py-2 font-medium text-gray-500">Suspension</TableCell>
-                        <TableCell className="py-2">{mockCarData.details.suspension}</TableCell>
+                        <TableCell className="py-2">{carListing.suspension || 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
                         <TableCell className="py-2 font-medium text-gray-500">Brakes</TableCell>
-                        <TableCell className="py-2">{mockCarData.details.brakes}</TableCell>
+                        <TableCell className="py-2">{carListing.brakes || 'N/A'}</TableCell>
                       </TableRow>
                       <TableRow>
-                        <TableCell className="py-2 font-medium text-gray-500">Seller Type</TableCell>
-                        <TableCell className="py-2">{mockCarData.details.sellerType}</TableCell>
+                        <TableCell className="py-2 font-medium text-gray-500">Location</TableCell>
+                        <TableCell className="py-2">{carListing.location || 'N/A'}</TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
@@ -321,34 +363,11 @@ const CarDetails = () => {
               </div>
             </Card>
             
-            {/* Seller Notes */}
-            <Card className="mb-6 shadow-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <User size={18} className="text-gray-500" />
-                  <h2 className="text-lg font-bold">Seller's Notes</h2>
-                </div>
-                <p className="text-gray-700">{mockCarData.sellerNotes}</p>
-              </CardContent>
-            </Card>
-            
-            {/* Highlights */}
-            <Card className="mb-6 shadow-sm">
-              <CardContent className="p-6">
-                <h2 className="text-lg font-bold mb-4">Highlights</h2>
-                <ul className="list-disc pl-5 space-y-2">
-                  {mockCarData.highlights.map((highlight, index) => (
-                    <li key={index} className="text-gray-700">{highlight}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-            
             {/* Description */}
             <Card className="shadow-sm mb-6">
               <CardContent className="p-6">
                 <h2 className="text-lg font-bold mb-4">Description</h2>
-                <p className="text-gray-700 whitespace-pre-line">{mockCarData.description}</p>
+                <p className="text-gray-700 whitespace-pre-line">{carListing.detailed_description || carListing.short_description}</p>
               </CardContent>
             </Card>
 
@@ -370,9 +389,9 @@ const CarDetails = () => {
       <ContactSellerDialog
         isOpen={isContactModalOpen}
         onClose={() => setIsContactModalOpen(false)}
-        carId={id || '1'}
-        carTitle={mockCarData.title}
-        sellerId={mockCarData.seller.id}
+        carId={id || ''}
+        carTitle={carListing.name}
+        sellerId={carListing.user_id}
       />
     </div>
   );

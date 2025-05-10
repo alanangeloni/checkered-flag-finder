@@ -13,7 +13,9 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { UploadCloud } from 'lucide-react';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 // Mock data for categories and subcategories
 const categories = [
@@ -50,6 +52,20 @@ const subcategoriesByCategory = {
   ],
 };
 
+// Race car types for dropdown options
+const raceCarTypes = [
+  'GT3',
+  'GT4',
+  'Le Mans Prototype',
+  'Formula',
+  'Stock Car',
+  'Rally',
+  'Touring',
+  'Karting',
+  'Other'
+];
+
+// Updated schema to include our race car fields
 const formSchema = z.object({
   name: z.string().min(3, 'Car name must be at least 3 characters'),
   make: z.string().min(1, 'Make is required'),
@@ -61,12 +77,24 @@ const formSchema = z.object({
   shortDescription: z.string().min(10, 'Short description must be at least 10 characters'),
   detailedDescription: z.string().optional(),
   location: z.string().optional(),
-  mileage: z.string().optional(),
+  engineHours: z.string().optional(),
+  engineSpecs: z.string().optional(),
+  raceCarType: z.string().optional(),
+  drivetrain: z.string().optional(),
+  transmission: z.string().optional(),
+  safetyEquipment: z.string().optional(),
+  suspension: z.string().optional(),
+  brakes: z.string().optional(),
+  weight: z.string().optional(),
+  sellerType: z.string().optional(),
 });
 
 const ListCar = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -81,17 +109,77 @@ const ListCar = () => {
       shortDescription: '',
       detailedDescription: '',
       location: '',
-      mileage: '',
+      engineHours: '',
+      engineSpecs: '',
+      raceCarType: '',
+      drivetrain: '',
+      transmission: '',
+      safetyEquipment: '',
+      suspension: '',
+      brakes: '',
+      weight: '',
+      sellerType: '',
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log('Form submitted:', values);
-    toast({
-      title: "Car listing submitted",
-      description: "Your car listing has been submitted successfully",
-    });
-    // Here you would typically send the data to your API
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    try {
+      setIsSubmitting(true);
+
+      // Check if the user is logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('You must be logged in to list a car');
+        navigate('/login');
+        return;
+      }
+
+      // Create the car listing
+      const { data: carListing, error: carError } = await supabase
+        .from('car_listings')
+        .insert({
+          name: values.name,
+          make: values.make,
+          model: values.model,
+          year: values.year ? parseInt(values.year) : null,
+          category_id: values.categoryId,
+          subcategory_id: values.subcategoryId,
+          price: values.price ? parseFloat(values.price) : 0,
+          short_description: values.shortDescription,
+          detailed_description: values.detailedDescription,
+          location: values.location,
+          user_id: session.user.id,
+          engine_hours: values.engineHours ? parseInt(values.engineHours) : null,
+          engine_specs: values.engineSpecs,
+          race_car_type: values.raceCarType,
+          drivetrain: values.drivetrain,
+          transmission: values.transmission,
+          safety_equipment: values.safetyEquipment,
+          suspension: values.suspension,
+          brakes: values.brakes,
+          weight: values.weight,
+          seller_type: values.sellerType,
+        })
+        .select()
+        .single();
+
+      if (carError) throw carError;
+
+      // Handle image uploads if needed
+      if (imageFiles.length > 0 && carListing) {
+        // Logic for handling image uploads would go here
+        toast.success('Car listing created successfully!');
+        navigate(`/car-details/${carListing.id}`);
+      } else {
+        toast.success('Car listing created successfully!');
+        navigate(`/car-details/${carListing.id}`);
+      }
+    } catch (err: any) {
+      console.error('Error creating listing:', err);
+      toast.error(err.message || 'Failed to create listing');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCategoryChange = (categoryId: string) => {
@@ -104,12 +192,24 @@ const ListCar = () => {
     const files = event.target.files;
     if (!files) return;
     
-    const newPreviewImages = Array.from(files).map(file => URL.createObjectURL(file));
+    // Store the files for later upload
+    const newFiles = Array.from(files);
+    setImageFiles([...imageFiles, ...newFiles]);
+    
+    // Create preview URLs
+    const newPreviewImages = newFiles.map(file => URL.createObjectURL(file));
     setPreviewImages([...previewImages, ...newPreviewImages]);
   };
 
   const removeImage = (index: number) => {
-    setPreviewImages(previewImages.filter((_, i) => i !== index));
+    const newImageFiles = [...imageFiles];
+    newImageFiles.splice(index, 1);
+    setImageFiles(newImageFiles);
+
+    const newPreviewImages = [...previewImages];
+    URL.revokeObjectURL(newPreviewImages[index]);
+    newPreviewImages.splice(index, 1);
+    setPreviewImages(newPreviewImages);
   };
 
   return (
@@ -121,192 +221,348 @@ const ListCar = () => {
         <Card className="p-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Car Name/Title</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. 2022 Ferrari F1-75" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="make"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Make/Brand</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Ferrari" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="model"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Model (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. F1-75" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="year"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Year</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. 2022" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="categoryId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Category</FormLabel>
-                      <Select 
-                        onValueChange={(value) => handleCategoryChange(value)}
-                        defaultValue={field.value}
-                      >
+              {/* Basic Information */}
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Basic Information</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Car Name/Title</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a category" />
-                          </SelectTrigger>
+                          <Input placeholder="e.g. 2022 Ferrari F1-75" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {categories.map((category) => (
-                            <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="subcategoryId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Subcategory (Optional)</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={!selectedCategory}
-                      >
+                  <FormField
+                    control={form.control}
+                    name="make"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Make/Brand</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select a subcategory" />
-                          </SelectTrigger>
+                          <Input placeholder="e.g. Ferrari" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          {selectedCategory && subcategoriesByCategory[selectedCategory as keyof typeof subcategoriesByCategory]?.map((subcategory) => (
-                            <SelectItem key={subcategory.id} value={subcategory.id}>{subcategory.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="model"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Model (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. F1-75" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="price"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Price ($)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. 250000" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="year"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Year</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. 2022" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="mileage"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mileage (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. 5000" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="categoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Category</FormLabel>
+                        <Select 
+                          onValueChange={(value) => handleCategoryChange(value)}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {categories.map((category) => (
+                              <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Location (Optional)</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Miami, FL" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                  <FormField
+                    control={form.control}
+                    name="subcategoryId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subcategory (Optional)</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={!selectedCategory}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a subcategory" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {selectedCategory && subcategoriesByCategory[selectedCategory as keyof typeof subcategoriesByCategory]?.map((subcategory) => (
+                              <SelectItem key={subcategory.id} value={subcategory.id}>{subcategory.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Price ($)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. 250000" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Location (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Miami, FL" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </div>
 
-              <FormField
-                control={form.control}
-                name="shortDescription"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Short Description</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Brief description of your car" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="detailedDescription"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Detailed Description (Optional)</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        placeholder="Detailed information about the car's features, history, condition, etc." 
-                        className="min-h-32" 
-                        {...field} 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+              {/* Race Car Specifications */}
               <div>
+                <h2 className="text-xl font-semibold mb-4">Race Car Specifications</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={form.control}
+                    name="engineHours"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Engine Hours</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. 200" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="engineSpecs"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Engine Specifications</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. 4.0L Flat-6, 502hp" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="raceCarType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Race Car Type</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange}
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select race car type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {raceCarTypes.map((type) => (
+                              <SelectItem key={type} value={type}>{type}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="drivetrain"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Drivetrain</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Rear-wheel drive" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="transmission"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Transmission</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Sequential Racing Gearbox" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="safetyEquipment"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Safety Equipment</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Full Roll Cage, Fire Suppression" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="suspension"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Suspension</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Racing Coilovers, Adjustable" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="brakes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Brakes</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Carbon Ceramic, 6-piston" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="weight"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Weight</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. 2,800 lbs" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="sellerType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Seller Type</FormLabel>
+                        <FormControl>
+                          <Input placeholder="e.g. Professional Race Team" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Description</h2>
+                <FormField
+                  control={form.control}
+                  name="shortDescription"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Short Description</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Brief description of your car" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="mt-4">
+                  <FormField
+                    control={form.control}
+                    name="detailedDescription"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Detailed Description (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Detailed information about the car's features, history, condition, etc." 
+                            className="min-h-32" 
+                            {...field} 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+
+              {/* Image Upload */}
+              <div>
+                <h2 className="text-xl font-semibold mb-4">Images</h2>
                 <Label htmlFor="images">Car Images</Label>
                 <div className="mt-2 border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
                   <div className="flex flex-col items-center">
@@ -355,7 +611,14 @@ const ListCar = () => {
                 )}
               </div>
 
-              <Button type="submit" className="w-full md:w-auto">Submit Listing</Button>
+              <Button 
+                type="submit" 
+                variant="primary" 
+                className="w-full md:w-auto"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Submitting...' : 'Submit Listing'}
+              </Button>
             </form>
           </Form>
         </Card>
