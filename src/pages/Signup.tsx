@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -35,13 +36,35 @@ const Signup = () => {
     setIsLoading(true);
     
     try {
-      // Simulate signup - Replace with actual auth later
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Account created successfully!');
-      navigate('/login');
-    } catch (error) {
-      toast.error('Signup failed. Please try again.');
-      console.error(error);
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            avatar_url: null,
+          }
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.user) {
+        // Automatically sign in after signup
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+
+        if (signInError) throw signInError;
+        
+        toast.success('Account created successfully!');
+        navigate('/');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Signup failed. Please try again.');
+      console.error("Signup error:", error);
     } finally {
       setIsLoading(false);
     }
