@@ -9,6 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import UserListings from '@/components/UserListings';
+import UserMessages from '@/components/UserMessages';
 
 const Profile = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -71,13 +74,13 @@ const Profile = () => {
     <div className="min-h-screen bg-racecar-lightgray">
       <Header />
       <div className="container mx-auto py-16 px-4">
-        <Card className="max-w-3xl mx-auto">
+        <Card className="max-w-5xl mx-auto">
           <CardHeader>
             <CardTitle className="text-3xl">My Profile</CardTitle>
             <CardDescription>Manage your account details and preferences</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="flex items-center space-x-6">
+          <CardContent>
+            <div className="flex items-center space-x-6 mb-6">
               <Avatar className="w-20 h-20">
                 <AvatarFallback className="text-2xl">
                   {user?.email ? user.email.substring(0, 2).toUpperCase() : 'U'}
@@ -89,29 +92,47 @@ const Profile = () => {
               </div>
             </div>
 
-            <div className="grid gap-4 pt-6 border-t">
-              <h4 className="font-medium text-lg">Account Information</h4>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Email</p>
-                  <p>{user?.email}</p>
+            <Tabs defaultValue="account" className="w-full">
+              <TabsList className="mb-6">
+                <TabsTrigger value="account">Account</TabsTrigger>
+                <TabsTrigger value="listings">My Listings</TabsTrigger>
+                <TabsTrigger value="messages">Messages</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="account" className="space-y-6">
+                <div className="grid gap-4 border-t pt-6">
+                  <h4 className="font-medium text-lg">Account Information</h4>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Email</p>
+                      <p>{user?.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">User ID</p>
+                      <p className="text-sm">{user?.id}</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">User ID</p>
-                  <p className="text-sm">{user?.id}</p>
-                </div>
-              </div>
-            </div>
 
-            <div className="grid gap-4 pt-6 border-t">
-              <h4 className="font-medium text-lg">Account Actions</h4>
-              <div className="flex flex-wrap gap-4">
-                <Button variant="outline" onClick={handleChangePassword}>Change Password</Button>
-                <Button variant="outline" className="text-red-600 hover:text-red-700" onClick={handleDeleteAccount}>
-                  Delete Account
-                </Button>
-              </div>
-            </div>
+                <div className="grid gap-4 pt-6 border-t">
+                  <h4 className="font-medium text-lg">Account Actions</h4>
+                  <div className="flex flex-wrap gap-4">
+                    <Button variant="outline" onClick={handleChangePassword}>Change Password</Button>
+                    <Button variant="outline" className="text-red-600 hover:text-red-700" onClick={handleDeleteAccount}>
+                      Delete Account
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="listings">
+                {user && <UserListings userId={user.id} />}
+              </TabsContent>
+              
+              <TabsContent value="messages">
+                {user && <UserMessages userId={user.id} />}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
