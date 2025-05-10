@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +12,7 @@ import CarImageGallery from '@/components/car-details/CarImageGallery';
 import CarPriceInfo from '@/components/car-details/CarPriceInfo';
 import CarSpecifications from '@/components/car-details/CarSpecifications';
 import CarDescription from '@/components/car-details/CarDescription';
+import RelatedCarListings from '@/components/car-details/RelatedCarListings';
 
 // Mock data to use as fallback for demo purposes
 const mockCarListings = {
@@ -185,6 +185,7 @@ const CarDetails = () => {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [carListing, setCarListing] = useState<CarListingWithImages | null>(null);
+  const [relatedListings, setRelatedListings] = useState<CarListingWithImages[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -203,6 +204,13 @@ const CarDetails = () => {
           // Use mock data for demo purposes
           console.log(`Using mock data for car ID ${id}`);
           setCarListing(mockCarListings[parseInt(id)] as unknown as CarListingWithImages);
+          
+          // Set related listings from mock data
+          const otherMockListings = Object.values(mockCarListings)
+            .filter((car) => car.id !== `mock-${id}`)
+            .slice(0, 4);
+          setRelatedListings(otherMockListings as unknown as CarListingWithImages[]);
+          
           setLoading(false);
           return;
         }
@@ -237,6 +245,28 @@ const CarDetails = () => {
             };
             
             setCarListing(formattedCar as CarListingWithImages);
+            
+            // Fetch related listings based on category, make, or model
+            const { data: relatedData } = await supabase
+              .from('car_listings')
+              .select(`
+                *,
+                images:car_images(*),
+                category:categories(name),
+                subcategory:subcategories(name)
+              `)
+              .neq('id', id)
+              .eq('status', 'active')
+              .limit(4);
+              
+            if (relatedData) {
+              const formattedRelated = relatedData.map((car: any) => ({
+                ...car,
+                category_name: car.category?.name,
+                subcategory_name: car.subcategory?.name
+              }));
+              setRelatedListings(formattedRelated);
+            }
           }
         } catch (err: any) {
           console.error('Error fetching car details from database:', err);
@@ -245,6 +275,12 @@ const CarDetails = () => {
           if (id && mockCarListings[parseInt(id)]) {
             console.log(`Falling back to mock data for car ID ${id}`);
             setCarListing(mockCarListings[parseInt(id)] as unknown as CarListingWithImages);
+            
+            // Set related listings from mock data
+            const otherMockListings = Object.values(mockCarListings)
+              .filter((car) => car.id !== `mock-${id}`)
+              .slice(0, 4);
+            setRelatedListings(otherMockListings as unknown as CarListingWithImages[]);
           } else {
             setError(err.message || 'Failed to load car details');
           }
@@ -319,9 +355,9 @@ const CarDetails = () => {
           <p className="text-gray-600">{carListing?.short_description}</p>
         </div>
         
-        <div className="grid grid-cols-1 gap-6">
-          {/* Main Content Area */}
-          <div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content Area (2/3 width on large screens) */}
+          <div className="lg:col-span-2">
             {/* Image Gallery Component */}
             <CarImageGallery 
               images={images} 
@@ -359,6 +395,11 @@ const CarDetails = () => {
                 <Heart className="h-4 w-4" />
               </Button>
             </div>
+          </div>
+          
+          {/* Right Sidebar (1/3 width on large screens) */}
+          <div className="lg:col-span-1">
+            <RelatedCarListings listings={relatedListings} currentCarId={id || ''} />
           </div>
         </div>
       </main>
