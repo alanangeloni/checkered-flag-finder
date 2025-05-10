@@ -82,6 +82,7 @@ const subcategories = {
 const formatPrice = (price: number) => {
   return `$${price.toLocaleString()}`;
 };
+
 const Listings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([100000, 300000]);
@@ -117,15 +118,16 @@ const Listings = () => {
     setSelectedCategory(category);
     setSelectedSubcategory("All Subcategories");
   };
+  
   return <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-grow bg-gray-50">
         <div className="container mx-auto px-4 py-8">
           
           
-          {/* Modern search and filter bar with gradient background */}
+          {/* Search and filter bar with solid background (removed gradient) */}
           <div className="rounded-xl shadow-lg mb-8 overflow-hidden">
-            <div className="bg-gradient-to-r from-teal-600 to-blue-600 p-6 text-white">
+            <div className="bg-black p-6 text-white">
               <h2 className="font-bold text-center mb-2 text-4xl">Race Cars for Sale</h2>
               <p className="text-center mb-6">Browse our exclusive collection of high-performance vehicles</p>
               
