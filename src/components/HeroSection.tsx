@@ -91,8 +91,8 @@ const HeroSection = () => {
                 </div>
               )}
               
-              {/* Premium badge */}
-              <div className="absolute top-4 right-4 bg-yellow-500 text-black font-bold px-3 py-1 rounded-full">
+              {/* Premium badge - Updated to red with white text */}
+              <div className="absolute top-4 right-4 bg-red-600 text-white font-bold px-3 py-1 rounded-full">
                 PREMIUM
               </div>
             </div>
