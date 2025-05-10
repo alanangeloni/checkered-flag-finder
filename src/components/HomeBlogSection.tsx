@@ -28,11 +28,19 @@ const featuredPosts = [
     date: "10/22/24",
     image: "https://images.unsplash.com/photo-1574275555839-061fbe6723e6",
     slug: "historic-racing-series"
+  },
+  {
+    id: 4,
+    title: "Electric Racing: The Future of Motorsports",
+    excerpt: "How electric racing series are changing the landscape of competitive motorsports.",
+    date: "10/21/24",
+    image: "https://images.unsplash.com/photo-1661956602139-ec64991b8b16",
+    slug: "electric-racing-future"
   }
 ];
 
 const HomeBlogSection = () => {
-  // Get the main featured post and the remaining posts for the sidebar
+  // Get the main featured post and exactly 3 for the sidebar
   const mainPost = featuredPosts[0];
   const sidebarPosts = featuredPosts.slice(1, 4); // Only get posts 2-4 for the sidebar
   
@@ -41,7 +49,7 @@ const HomeBlogSection = () => {
       <h1 className="text-4xl font-bold mb-8 text-black">Latest Articles</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Featured article - takes up more space but with limited height */}
+        {/* Featured article - with fixed height */}
         <div className="lg:col-span-7">
           <Link to={`/blog/${mainPost.slug}`} className="block h-full">
             <div className="rounded-lg overflow-hidden shadow-md h-64 relative">
@@ -57,8 +65,8 @@ const HomeBlogSection = () => {
           </Link>
         </div>
         
-        {/* Sidebar articles with smaller images and text on the right */}
-        <div className="lg:col-span-5 space-y-6 flex flex-col justify-start">
+        {/* Sidebar articles - showing exactly 3 articles */}
+        <div className="lg:col-span-5 space-y-6 flex flex-col justify-start h-64 overflow-hidden">
           {sidebarPosts.map((post) => (
             <Link key={post.id} to={`/blog/${post.slug}`} className="block">
               <div className="flex items-start space-x-4">
