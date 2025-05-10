@@ -49,10 +49,10 @@ const HomeBlogSection = () => {
       <h1 className="text-4xl font-bold mb-8 text-black">Latest Articles</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Featured article - with fixed height */}
+        {/* Featured article - with height adjusted to match sidebar */}
         <div className="lg:col-span-7">
           <Link to={`/blog/${mainPost.slug}`} className="block h-full">
-            <div className="rounded-lg overflow-hidden shadow-md h-96 relative">
+            <div className="rounded-lg overflow-hidden shadow-md h-80 relative">
               <img 
                 src={mainPost.image} 
                 alt={mainPost.title} 
@@ -66,7 +66,7 @@ const HomeBlogSection = () => {
         </div>
         
         {/* Sidebar articles - showing all sidebar articles */}
-        <div className="lg:col-span-5 space-y-6 flex flex-col h-96 overflow-y-auto">
+        <div className="lg:col-span-5 space-y-6 flex flex-col h-80 overflow-y-auto">
           {sidebarPosts.map((post) => (
             <Link key={post.id} to={`/blog/${post.slug}`} className="block">
               <div className="flex items-start space-x-4">
