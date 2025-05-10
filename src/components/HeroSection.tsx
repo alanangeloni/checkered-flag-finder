@@ -49,8 +49,8 @@ const HeroSection = () => {
   const fallbackSmallImages = ["https://images.unsplash.com/photo-1597516690807-65bfba6a1204", "https://images.unsplash.com/photo-1574697489276-12929b6571bd", "https://images.unsplash.com/photo-1581680395170-5e321f9f0a7e", "https://images.unsplash.com/photo-1588127333419-b9d7de223dcf"];
   return <div className="container mx-auto px-4 py-6">
       <div className="mb-6">
-        <h2 className="text-2xl font-bold">Featured Premium Listing</h2>
-        <p className="text-gray-600">Explore our finest racing car available</p>
+        
+        
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
