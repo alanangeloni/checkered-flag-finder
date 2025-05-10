@@ -123,10 +123,10 @@ const Listings = () => {
         <div className="container mx-auto px-4 py-8">
           
           
-          {/* Search and filter bar with black background */}
+          {/* Modern search and filter bar with gradient background */}
           <div className="rounded-xl shadow-lg mb-8 overflow-hidden">
-            <div className="bg-black p-6 text-white">
-              <h1 className="text-2xl font-bold text-center mb-2">Race Cars for Sale</h1>
+            <div className="bg-gradient-to-r from-teal-600 to-blue-600 p-6 text-white">
+              <h2 className="text-2xl font-bold text-center mb-2">Race Cars for Sale</h2>
               <p className="text-center mb-6">Browse our exclusive collection of high-performance vehicles</p>
               
               <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -171,7 +171,7 @@ const Listings = () => {
                   </SelectContent>
                 </Select>
 
-                <Button variant="outline" className="bg-white text-blue-600 hover:bg-white/90 hover:text-blue-700 border-0" onClick={() => setShowFilters(!showFilters)}>
+                <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="border-0 text-racecar-red bg-white">
                   <Filter size={18} className="mr-2" />
                   More Filters
                 </Button>
