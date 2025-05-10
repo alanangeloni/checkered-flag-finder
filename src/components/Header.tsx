@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import RacecarLogo from './RacecarLogo';
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from '@/components/ui/navigation-menu';
 import { Button } from '@/components/ui/button';
@@ -9,18 +9,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { toast } from 'sonner';
 
 const Header = () => {
   const [user, setUser] = useState<User | null>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check current auth state
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user || null);
-    });
+    };
+    
+    checkUser();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session?.user);
       setUser(session?.user || null);
     });
 
@@ -28,7 +34,15 @@ const Header = () => {
   }, []);
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast.success("Signed out successfully");
+      navigate('/');
+    } catch (error: any) {
+      toast.error(error.message || "Error signing out");
+      console.error("Sign out error:", error);
+    }
   };
 
   return (
@@ -110,16 +124,16 @@ const Header = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Link to="/profile" className="w-full">Profile</Link>
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="w-full cursor-pointer">Profile</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Link to="/my-listings" className="w-full">My Listings</Link>
+                    <DropdownMenuItem asChild>
+                      <Link to="/my-listings" className="w-full cursor-pointer">My Listings</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Link to="/settings" className="w-full">Settings</Link>
+                    <DropdownMenuItem asChild>
+                      <Link to="/settings" className="w-full cursor-pointer">Settings</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleSignOut}>
+                    <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
                       Sign Out
                     </DropdownMenuItem>
                   </DropdownMenuContent>

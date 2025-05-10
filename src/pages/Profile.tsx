@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 const Profile = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -19,6 +20,7 @@ const Profile = () => {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
+        toast.error('Please login to view your profile');
         navigate('/login');
         return;
       }
@@ -30,12 +32,35 @@ const Profile = () => {
     getUser();
   }, [navigate]);
 
+  const handleChangePassword = async () => {
+    if (!user?.email) return;
+    
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/update-password`,
+      });
+      
+      if (error) throw error;
+      
+      toast.success('Password reset email sent!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send reset email');
+      console.error(error);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    // This would typically require backend support through Supabase Edge Functions
+    // For now, we'll just show a toast notification
+    toast.error('Account deletion requires admin action. Please contact support.');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-racecar-lightgray">
         <Header />
         <div className="container mx-auto py-16 px-4">
-          <p>Loading...</p>
+          <p>Loading profile...</p>
         </div>
         <Footer />
       </div>
@@ -81,8 +106,10 @@ const Profile = () => {
             <div className="grid gap-4 pt-6 border-t">
               <h4 className="font-medium text-lg">Account Actions</h4>
               <div className="flex flex-wrap gap-4">
-                <Button variant="outline">Change Password</Button>
-                <Button variant="outline" className="text-red-600 hover:text-red-700">Delete Account</Button>
+                <Button variant="outline" onClick={handleChangePassword}>Change Password</Button>
+                <Button variant="outline" className="text-red-600 hover:text-red-700" onClick={handleDeleteAccount}>
+                  Delete Account
+                </Button>
               </div>
             </div>
           </CardContent>

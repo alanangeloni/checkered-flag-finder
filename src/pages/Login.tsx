@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -27,12 +28,19 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      // Simulate login - Replace with actual auth later
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
       toast.success('Login successful!');
       navigate('/');
-    } catch (error) {
-      toast.error('Login failed. Please check your credentials.');
+    } catch (error: any) {
+      toast.error(error.message || 'Login failed. Please check your credentials.');
       console.error(error);
     } finally {
       setIsLoading(false);
