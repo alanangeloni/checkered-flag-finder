@@ -32,19 +32,21 @@ const CarDetailsContent = ({
         <p className="text-gray-600">{carListing?.short_description}</p>
       </div>
       
-      {/* Main content area - Two column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column - Car details (2/3 width on large screens) */}
-        <div className="lg:col-span-2">
-          {/* Image Gallery Component */}
+      {/* Main content area */}
+      <div>
+        {/* Image Gallery Component - Full Width */}
+        <div className="w-full mb-6">
           <CarImageGallery 
             images={images} 
             carName={carListing?.name || ''} 
             isFeatured={carListing?.featured || false} 
           />
-          
-          {/* Car Details Components - Below Images */}
-          <div className="mt-6">
+        </div>
+        
+        {/* Two column layout for details and listings */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left column - Car details (2/3 width on large screens) */}
+          <div className="lg:col-span-2">
             {/* Price and Contact Info Component */}
             <CarPriceInfo 
               price={carListing?.price || 0}
@@ -76,11 +78,11 @@ const CarDetailsContent = ({
               </Button>
             </div>
           </div>
-        </div>
-        
-        {/* Right column - Related listings (1/3 width on large screens) */}
-        <div className="lg:col-span-1">
-          <RelatedCarListings listings={relatedListings} currentCarId={id} />
+          
+          {/* Right column - Related listings (1/3 width on large screens) */}
+          <div className="lg:col-span-1">
+            <RelatedCarListings listings={relatedListings} currentCarId={id} />
+          </div>
         </div>
       </div>
     </>
