@@ -1,12 +1,36 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import RacecarLogo from './RacecarLogo';
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from '@/components/ui/navigation-menu';
 import { Button } from '@/components/ui/button';
-import { Search } from 'lucide-react';
+import { Search, UserRound } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const Header = () => {
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    // Check current auth state
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
     <header className="bg-white py-4 px-6 border-b border-gray-200">
       <div className="container mx-auto">
@@ -68,12 +92,49 @@ const Header = () => {
               <Search className="mr-2 h-4 w-4" />
               Search
             </Button>
-            <Link to="/login">
-              <Button variant="outline" size="sm">Sign In</Button>
-            </Link>
-            <Link to="/list-car">
-              <Button size="sm" className="bg-racecar-red hover:bg-red-700">List Your Car</Button>
-            </Link>
+            
+            {user ? (
+              <>
+                <Link to="/list-car">
+                  <Button size="sm" className="bg-racecar-red hover:bg-red-700">List Your Car</Button>
+                </Link>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="rounded-full w-10 h-10 p-0">
+                      <Avatar>
+                        <AvatarFallback>
+                          {user.email ? user.email.substring(0, 2).toUpperCase() : 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>
+                      <Link to="/profile" className="w-full">Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link to="/my-listings" className="w-full">My Listings</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Link to="/settings" className="w-full">Settings</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleSignOut}>
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="outline" size="sm">Sign In</Button>
+                </Link>
+                <Link to="/list-car">
+                  <Button size="sm" className="bg-racecar-red hover:bg-red-700">List Your Car</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
