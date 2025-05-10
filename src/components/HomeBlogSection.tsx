@@ -1,71 +1,77 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Link } from 'react-router-dom';
+import { FileText } from 'lucide-react';
 
-// Sample blog posts data
+// Sample blog posts data with dates formatted as MM/DD/YY
 const featuredPosts = [
   {
     id: 1,
-    title: "The Evolution of Formula 1 Aerodynamics",
-    excerpt: "A deep dive into how aerodynamic innovations have shaped Formula 1 racing over the decades.",
-    author: "Michael Reynolds",
-    date: "May 3, 2025",
+    title: "The Mental Side of Racing: Techniques for Improving Focus and Concentration",
+    excerpt: "A deep dive into how mental preparation can improve racing performance.",
+    date: "10/22/24",
     image: "https://images.unsplash.com/photo-1617196701537-7329482cc9fe",
-    slug: "evolution-of-formula-1-aerodynamics"
+    slug: "mental-side-of-racing"
   },
   {
     id: 2,
-    title: "Mastering the Track: Pro Racing Tips",
-    excerpt: "Professional drivers share their secrets for optimizing performance on any racing circuit.",
-    author: "Sophia Chen",
-    date: "April 28, 2025",
+    title: "Why Rallycross is Gaining Global Popularity",
+    excerpt: "Exploring the factors behind the rising popularity of rallycross events worldwide.",
+    date: "10/22/24",
     image: "https://images.unsplash.com/photo-1516546453174-5e1098a4b4af",
-    slug: "mastering-the-track-tips-from-professionals"
+    slug: "rallycross-global-popularity"
   },
   {
     id: 3,
-    title: "The Rise of Electric Racing",
-    excerpt: "Exploring how electric vehicles are transforming motorsports and what this means for traditional racing.",
-    author: "James Wilson",
-    date: "April 22, 2025",
+    title: "How Historic Racing Series Keep Motorsports History Alive",
+    excerpt: "Celebrating the importance of historic racing events in preserving automotive heritage.",
+    date: "10/22/24",
     image: "https://images.unsplash.com/photo-1574275555839-061fbe6723e6",
-    slug: "rise-of-electric-racing"
+    slug: "historic-racing-series"
   }
 ];
 
 const HomeBlogSection = () => {
   return (
-    <div className="container mx-auto px-4 py-10 bg-racecar-darkgray">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-white">Latest from our Blog</h1>
-        <Link to="/blog" className="text-racecar-red hover:underline">
-          View all articles →
-        </Link>
-      </div>
+    <div className="container mx-auto px-4 py-12 bg-white">
+      <h1 className="text-4xl font-bold mb-8 text-black">Latest Articles</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {featuredPosts.map(post => (
-          <Link key={post.id} to={`/blog/${post.slug}`}>
-            <Card className="overflow-hidden hover:shadow-lg transition-shadow h-full bg-gray-900 border-gray-800">
-              <div className="h-48 overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Featured article - takes up more space */}
+        <div className="lg:col-span-7">
+          <Link to={`/blog/${featuredPosts[0].slug}`} className="block h-full">
+            <div className="rounded-lg overflow-hidden shadow-md h-full bg-white">
+              <div className="h-96 relative">
                 <img 
-                  src={post.image} 
-                  alt={post.title} 
-                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                  src={featuredPosts[0].image} 
+                  alt={featuredPosts[0].title} 
+                  className="w-full h-full object-cover"
                 />
               </div>
-              <CardHeader className="text-white">
-                <span className="text-sm font-medium text-racecar-red mb-1">{post.date}</span>
-                <h3 className="text-xl font-bold">{post.title}</h3>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-400 mb-4">{post.excerpt}</p>
-                <span className="text-racecar-red font-medium">Read More →</span>
-              </CardContent>
-            </Card>
+            </div>
           </Link>
-        ))}
+        </div>
+        
+        {/* Sidebar articles with smaller images and text on the right */}
+        <div className="lg:col-span-5 space-y-6">
+          {featuredPosts.slice(0, 3).map((post) => (
+            <Link key={post.id} to={`/blog/${post.slug}`} className="block">
+              <div className="flex items-start space-x-4">
+                <div className="w-32 h-24 flex-shrink-0">
+                  <img 
+                    src={post.image} 
+                    alt={post.title} 
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-lg text-black line-clamp-2">{post.title}</h3>
+                  <p className="text-gray-500 text-sm mt-1">{post.date}</p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </div>
   );
