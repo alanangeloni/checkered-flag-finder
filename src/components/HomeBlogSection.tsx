@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FileText } from 'lucide-react';
+import { Card, CardContent } from "@/components/ui/card";
 
 // Sample blog posts data with dates formatted as MM/DD/YY
 const featuredPosts = [
@@ -40,21 +40,22 @@ const HomeBlogSection = () => {
         {/* Featured article - takes up more space */}
         <div className="lg:col-span-7">
           <Link to={`/blog/${featuredPosts[0].slug}`} className="block h-full">
-            <div className="rounded-lg overflow-hidden shadow-md h-full bg-white">
-              <div className="h-96 relative">
-                <img 
-                  src={featuredPosts[0].image} 
-                  alt={featuredPosts[0].title} 
-                  className="w-full h-full object-cover"
-                />
+            <div className="rounded-lg overflow-hidden shadow-md h-full relative">
+              <img 
+                src={featuredPosts[0].image} 
+                alt={featuredPosts[0].title} 
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+                <h2 className="font-bold text-2xl text-white">{featuredPosts[0].title}</h2>
               </div>
             </div>
           </Link>
         </div>
         
         {/* Sidebar articles with smaller images and text on the right */}
-        <div className="lg:col-span-5 space-y-6">
-          {featuredPosts.slice(0, 3).map((post) => (
+        <div className="lg:col-span-5 space-y-6 flex flex-col justify-start">
+          {featuredPosts.map((post) => (
             <Link key={post.id} to={`/blog/${post.slug}`} className="block">
               <div className="flex items-start space-x-4">
                 <div className="w-32 h-24 flex-shrink-0">
