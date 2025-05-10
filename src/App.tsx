@@ -11,8 +11,6 @@ import BlogArticle from "./pages/BlogArticle";
 import NotFound from "./pages/NotFound";
 import CarDetails from "./pages/CarDetails";
 import ListCar from "./pages/ListCar";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
 
 const queryClient = new QueryClient();
 
@@ -29,8 +27,6 @@ const App = () => (
           <Route path="/blog/:slug" element={<BlogArticle />} />
           <Route path="/car-details/:id" element={<CarDetails />} />
           <Route path="/list-car" element={<ListCar />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

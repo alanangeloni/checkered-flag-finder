@@ -82,7 +82,6 @@ const subcategories = {
 const formatPrice = (price: number) => {
   return `$${price.toLocaleString()}`;
 };
-
 const Listings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([100000, 300000]);
@@ -118,24 +117,24 @@ const Listings = () => {
     setSelectedCategory(category);
     setSelectedSubcategory("All Subcategories");
   };
-
   return <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-grow bg-racecar-darkgray text-white">
+      <main className="flex-grow bg-gray-50">
         <div className="container mx-auto px-4 py-8">
           
-          {/* Modern search and filter bar with dark slate background */}
+          
+          {/* Modern search and filter bar with gradient background */}
           <div className="rounded-xl shadow-lg mb-8 overflow-hidden">
-            <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-6 text-white">
-              <h1 className="text-3xl font-bold text-center mb-2">Race Cars for Sale</h1>
+            <div className="bg-gradient-to-r from-teal-600 to-blue-600 p-6 text-white">
+              <h2 className="text-2xl font-bold text-center mb-2">Race Cars for Sale</h2>
               <p className="text-center mb-6">Browse our exclusive collection of high-performance vehicles</p>
               
               <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                 <Select value={selectedCategory} onValueChange={handleCategoryChange}>
-                  <SelectTrigger className="bg-white/10 border-0 text-white backdrop-blur-sm">
+                  <SelectTrigger className="bg-white/20 border-0 text-white backdrop-blur-sm">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-800 text-white border-slate-700">
+                  <SelectContent>
                     {categories.map(category => <SelectItem key={category} value={category}>
                         {category}
                       </SelectItem>)}
@@ -143,10 +142,10 @@ const Listings = () => {
                 </Select>
 
                 <Select value={selectedSubcategory} onValueChange={setSelectedSubcategory}>
-                  <SelectTrigger className="bg-white/10 border-0 text-white backdrop-blur-sm">
+                  <SelectTrigger className="bg-white/20 border-0 text-white backdrop-blur-sm">
                     <SelectValue placeholder="Subcategory" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-800 text-white border-slate-700">
+                  <SelectContent>
                     {subcategories[selectedCategory as keyof typeof subcategories]?.map(sub => <SelectItem key={sub} value={sub}>
                         {sub}
                       </SelectItem>)}
@@ -157,14 +156,14 @@ const Listings = () => {
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search className="text-white/70" size={18} />
                   </div>
-                  <Input type="text" placeholder="Search by make, model, or location..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 bg-white/10 border-0 text-white placeholder:text-white/70" />
+                  <Input type="text" placeholder="Search by make, model, or location..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 bg-white/20 border-0 text-white placeholder:text-white/70" />
                 </div>
 
                 <Select value={sort} onValueChange={value => setSort(value)}>
-                  <SelectTrigger className="bg-white/10 border-0 text-white backdrop-blur-sm">
+                  <SelectTrigger className="bg-white/20 border-0 text-white backdrop-blur-sm">
                     <SelectValue placeholder="Sort By" />
                   </SelectTrigger>
-                  <SelectContent className="bg-slate-800 text-white border-slate-700">
+                  <SelectContent>
                     <SelectItem value="newest">Newest First</SelectItem>
                     <SelectItem value="price-low">Price: Low to High</SelectItem>
                     <SelectItem value="price-high">Price: High to Low</SelectItem>
@@ -172,24 +171,24 @@ const Listings = () => {
                   </SelectContent>
                 </Select>
 
-                <Button variant="outline" className="bg-white/10 text-white hover:bg-white/20 hover:text-white border-0" onClick={() => setShowFilters(!showFilters)}>
+                <Button variant="outline" className="bg-white text-blue-600 hover:bg-white/90 hover:text-blue-700 border-0" onClick={() => setShowFilters(!showFilters)}>
                   <Filter size={18} className="mr-2" />
                   More Filters
                 </Button>
               </div>
             </div>
 
-            {/* Expandable filter section with updated colors */}
-            {showFilters && <div className="bg-slate-800 p-5 border-t border-slate-700">
+            {/* Expandable filter section */}
+            {showFilters && <div className="bg-white p-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="price-range" className="font-medium mb-2 block text-white">
+                    <Label htmlFor="price-range" className="font-medium mb-2 block">
                       Price Range: {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
                     </Label>
                     <Slider id="price-range" defaultValue={[priceRange[0], priceRange[1]]} min={minPrice} max={maxPrice} step={5000} onValueChange={values => setPriceRange(values as [number, number])} className="my-6" />
                   </div>
                   <div className="flex items-end justify-end">
-                    <Button variant="outline" className="mr-2 bg-slate-700 hover:bg-slate-600 text-white border-0" onClick={() => {
+                    <Button variant="outline" className="mr-2" onClick={() => {
                   setSearchTerm('');
                   setPriceRange([minPrice, maxPrice]);
                   setSort('newest');
@@ -198,7 +197,7 @@ const Listings = () => {
                 }}>
                       Reset All
                     </Button>
-                    <Button className="bg-racecar-red hover:bg-red-700">
+                    <Button>
                       Apply Filters
                     </Button>
                   </div>
@@ -206,22 +205,22 @@ const Listings = () => {
               </div>}
           </div>
 
-          {/* Listings grid with updated card design */}
+          {/* Listings grid with updated card design to match reference image */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {sortedListings.map(car => <Link to={`/car-details/${car.id}`} key={car.id}>
-                <Card className="overflow-hidden rounded-lg hover:shadow-lg transition-shadow h-full border-0 shadow bg-slate-800 text-white">
+                <Card className="overflow-hidden rounded-lg hover:shadow-lg transition-shadow h-full border-0 shadow">
                   <div className="relative">
                     <img src={car.image} alt={car.title} className="w-full h-48 object-cover" />
-                    <div className="absolute bottom-0 left-0 bg-racecar-red text-white font-bold px-4 py-1 m-3 rounded">
+                    <div className="absolute bottom-0 left-0 bg-white text-black font-bold px-4 py-1 m-3 rounded">
                       ${car.price.toLocaleString()}
                     </div>
                   </div>
                   <CardContent className="p-4">
                     <h3 className="text-lg font-bold">{car.title}</h3>
-                    <div className="text-xs text-gray-400 mt-1">
-                      {car.category}, {car.subcategory}
+                    <div className="text-xs text-gray-600 mt-1">
+                      Race Car Details, Race Car Details, Race Car Details
                     </div>
-                    <div className="text-xs text-gray-400 mt-2">
+                    <div className="text-xs text-gray-600 mt-2">
                       {car.location}
                     </div>
                   </CardContent>
@@ -229,10 +228,10 @@ const Listings = () => {
               </Link>)}
           </div>
 
-          {filteredListings.length === 0 && <div className="text-center py-16 bg-slate-800 rounded-lg shadow-sm mt-8">
+          {filteredListings.length === 0 && <div className="text-center py-16 bg-white rounded-lg shadow-sm mt-8">
               <h3 className="text-xl font-medium mb-2">No listings found</h3>
-              <p className="text-gray-400">Try adjusting your search or filter criteria</p>
-              <Button className="mt-4 bg-racecar-red hover:bg-red-700" onClick={() => {
+              <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+              <Button className="mt-4" onClick={() => {
             setSearchTerm('');
             setPriceRange([minPrice, maxPrice]);
             setSelectedCategory("All Categories");
