@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -356,20 +355,16 @@ const CarDetails = () => {
           <p className="text-gray-600">{carListing?.short_description}</p>
         </div>
         
-        <div className="grid grid-cols-1 gap-6">
-          {/* Main Content Area - Full Width */}
-          <div>
+        {/* Main content area */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Car details area (3/4 width on large screens) */}
+          <div className="lg:col-span-3">
             {/* Image Gallery Component */}
             <CarImageGallery 
               images={images} 
               carName={carListing?.name || ''} 
               isFeatured={carListing?.featured || false} 
             />
-            
-            {/* Related Listings - Now below main image */}
-            <div className="mt-6 mb-6">
-              <RelatedCarListings listings={relatedListings} currentCarId={id || ''} />
-            </div>
             
             {/* Price and Contact Info Component */}
             <CarPriceInfo 
@@ -401,6 +396,11 @@ const CarDetails = () => {
                 <Heart className="h-4 w-4" />
               </Button>
             </div>
+          </div>
+          
+          {/* Related listings sidebar (1/4 width on large screens) */}
+          <div className="lg:col-span-1">
+            <RelatedCarListings listings={relatedListings} currentCarId={id || ''} />
           </div>
         </div>
       </main>
