@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -272,34 +271,29 @@ const Listings = () => {
             )}
           </div>
 
-          {/* Listings grid with updated card design */}
+          {/* Listings grid with updated card design to match reference image */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {sortedListings.map(car => (
               <Link to={`/car-details/${car.id}`} key={car.id}>
-                <Card className="overflow-hidden rounded-xl border-0 shadow-lg hover:shadow-xl transition-shadow h-full">
+                <Card className="overflow-hidden rounded-lg hover:shadow-lg transition-shadow h-full border-0 shadow">
                   <div className="relative">
                     <img 
                       src={car.image} 
                       alt={car.title} 
-                      className="w-full h-64 object-cover"
+                      className="w-full h-48 object-cover"
                     />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                      <div className="text-white text-2xl font-bold">
-                        ${car.price.toLocaleString()}
-                      </div>
+                    <div className="absolute bottom-0 left-0 bg-white text-black font-bold px-4 py-1 m-3 rounded">
+                      ${car.price.toLocaleString()}
                     </div>
                   </div>
-                  <CardContent className="p-5">
-                    <h3 className="text-xl font-bold mb-2">{car.title}</h3>
-                    <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
-                      <span>{car.location}</span>
-                      <span>{car.mileage.toLocaleString()} miles</span>
+                  <CardContent className="p-4">
+                    <h3 className="text-lg font-bold">{car.title}</h3>
+                    <div className="text-xs text-gray-600 mt-1">
+                      Race Car Details, Race Car Details, Race Car Details
                     </div>
-                    <Button 
-                      className="w-full bg-black hover:bg-gray-800 text-white" 
-                    >
-                      View Details
-                    </Button>
+                    <div className="text-xs text-gray-600 mt-2">
+                      {car.location}
+                    </div>
                   </CardContent>
                 </Card>
               </Link>
