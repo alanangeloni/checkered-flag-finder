@@ -32,22 +32,26 @@ const featuredPosts = [
 ];
 
 const HomeBlogSection = () => {
+  // Get the main featured post and the remaining posts for the sidebar
+  const mainPost = featuredPosts[0];
+  const sidebarPosts = featuredPosts.slice(1, 4); // Only get posts 2-4 for the sidebar
+  
   return (
     <div className="container mx-auto px-4 py-12 bg-white">
       <h1 className="text-4xl font-bold mb-8 text-black">Latest Articles</h1>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Featured article - takes up more space */}
+        {/* Featured article - takes up more space but with limited height */}
         <div className="lg:col-span-7">
-          <Link to={`/blog/${featuredPosts[0].slug}`} className="block h-full">
-            <div className="rounded-lg overflow-hidden shadow-md h-full relative">
+          <Link to={`/blog/${mainPost.slug}`} className="block h-full">
+            <div className="rounded-lg overflow-hidden shadow-md h-64 relative">
               <img 
-                src={featuredPosts[0].image} 
-                alt={featuredPosts[0].title} 
+                src={mainPost.image} 
+                alt={mainPost.title} 
                 className="w-full h-full object-cover"
               />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
-                <h2 className="font-bold text-2xl text-white">{featuredPosts[0].title}</h2>
+                <h2 className="font-bold text-2xl text-white">{mainPost.title}</h2>
               </div>
             </div>
           </Link>
@@ -55,7 +59,7 @@ const HomeBlogSection = () => {
         
         {/* Sidebar articles with smaller images and text on the right */}
         <div className="lg:col-span-5 space-y-6 flex flex-col justify-start">
-          {featuredPosts.map((post) => (
+          {sidebarPosts.map((post) => (
             <Link key={post.id} to={`/blog/${post.slug}`} className="block">
               <div className="flex items-start space-x-4">
                 <div className="w-32 h-24 flex-shrink-0">
