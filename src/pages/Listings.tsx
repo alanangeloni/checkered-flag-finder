@@ -11,6 +11,13 @@ import {
   Card,
   CardContent,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Filter, Search, ChevronDown } from 'lucide-react';
 
 // Mock data for demonstration
@@ -102,26 +109,28 @@ const Listings = () => {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-grow">
+      <main className="flex-grow bg-gray-50">
         <div className="container mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold mb-6">Race Car Listings</h1>
+          <h1 className="text-4xl font-bold mb-8 text-center">Race Cars for Sale</h1>
           
-          {/* Search and filter bar */}
-          <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+          {/* Modern search and filter bar */}
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
             <div className="flex flex-col md:flex-row gap-4 mb-4">
               <div className="flex-grow relative">
-                <Search className="absolute left-3 top-3 text-gray-400" size={18} />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="text-gray-400" size={20} />
+                </div>
                 <Input
                   type="text"
-                  placeholder="Search by model, make, or location..."
+                  placeholder="Search by make, model, or location..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-gray-50 border-gray-200"
                 />
               </div>
               <Button 
                 variant="outline" 
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 border-gray-200 bg-gray-50"
                 onClick={() => setShowFilters(!showFilters)}
               >
                 <Filter size={18} />
@@ -132,10 +141,10 @@ const Listings = () => {
 
             {/* Expandable filter section */}
             {showFilters && (
-              <div className="border-t border-gray-200 pt-4 mt-2">
+              <div className="border-t border-gray-100 pt-5 mt-4">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
-                    <Label htmlFor="price-range" className="block mb-2">
+                    <Label htmlFor="price-range" className="font-medium mb-2 block">
                       Price Range: {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
                     </Label>
                     <Slider
@@ -145,30 +154,40 @@ const Listings = () => {
                       max={maxPrice}
                       step={5000}
                       onValueChange={(values) => setPriceRange(values as [number, number])}
-                      className="my-4"
+                      className="my-6"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="sort" className="block mb-2">Sort By</Label>
-                    <select
-                      id="sort"
+                    <Label htmlFor="sort" className="font-medium mb-2 block">Sort By</Label>
+                    <Select
                       value={sort}
-                      onChange={(e) => setSort(e.target.value)}
-                      className="w-full rounded-md border border-input p-2"
+                      onValueChange={(value) => setSort(value)}
                     >
-                      <option value="newest">Newest First</option>
-                      <option value="price-low">Price: Low to High</option>
-                      <option value="price-high">Price: High to Low</option>
-                      <option value="mileage">Lowest Mileage</option>
-                    </select>
+                      <SelectTrigger className="w-full bg-gray-50 border-gray-200">
+                        <SelectValue placeholder="Select sorting" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="newest">Newest First</SelectItem>
+                        <SelectItem value="price-low">Price: Low to High</SelectItem>
+                        <SelectItem value="price-high">Price: High to Low</SelectItem>
+                        <SelectItem value="mileage">Lowest Mileage</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex items-end">
-                    <Button className="mr-2" onClick={() => {
-                      setSearchTerm('');
-                      setPriceRange([minPrice, maxPrice]);
-                      setSort('newest');
-                    }}>
+                    <Button 
+                      variant="outline"
+                      className="mr-2" 
+                      onClick={() => {
+                        setSearchTerm('');
+                        setPriceRange([minPrice, maxPrice]);
+                        setSort('newest');
+                      }}
+                    >
                       Reset All
+                    </Button>
+                    <Button>
+                      Apply Filters
                     </Button>
                   </div>
                 </div>
@@ -176,30 +195,31 @@ const Listings = () => {
             )}
           </div>
 
-          {/* Listings grid with new card design */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Listings grid with updated card design */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {sortedListings.map(car => (
               <Link to={`/car-details/${car.id}`} key={car.id}>
-                <Card className="overflow-hidden rounded-lg hover:shadow-lg transition-shadow">
+                <Card className="overflow-hidden rounded-xl border-0 shadow-lg hover:shadow-xl transition-shadow">
                   <div className="relative">
                     <img 
                       src={car.image} 
                       alt={car.title} 
                       className="w-full h-64 object-cover"
                     />
-                    <div className="absolute bottom-0 left-0 bg-black bg-opacity-70 px-4 py-2 text-white text-xl font-bold">
-                      ${car.price.toLocaleString()}
+                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                      <div className="text-white text-2xl font-bold">
+                        ${car.price.toLocaleString()}
+                      </div>
                     </div>
                   </div>
-                  <CardContent className="p-4">
-                    <h3 className="text-xl font-bold mb-2">{car.title}</h3>
-                    <div className="flex justify-between items-center text-gray-600">
+                  <CardContent className="p-5">
+                    <h3 className="text-lg font-bold mb-2 text-gray-900">{car.title}</h3>
+                    <div className="flex justify-between items-center text-sm text-gray-600">
                       <span>{car.location}</span>
                       <span>{car.mileage.toLocaleString()} miles</span>
                     </div>
                     <Button 
                       className="w-full mt-4 bg-black hover:bg-gray-800 text-white" 
-                      size="lg"
                     >
                       View Details
                     </Button>
@@ -210,9 +230,18 @@ const Listings = () => {
           </div>
 
           {filteredListings.length === 0 && (
-            <div className="text-center py-12">
+            <div className="text-center py-16 bg-white rounded-lg shadow-sm mt-8">
               <h3 className="text-xl font-medium mb-2">No listings found</h3>
               <p className="text-gray-500">Try adjusting your search or filter criteria</p>
+              <Button 
+                className="mt-4"
+                onClick={() => {
+                  setSearchTerm('');
+                  setPriceRange([minPrice, maxPrice]);
+                }}
+              >
+                Reset Filters
+              </Button>
             </div>
           )}
         </div>
