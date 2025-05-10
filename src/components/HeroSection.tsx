@@ -66,14 +66,15 @@ const HeroSection = () => {
       </div>
       
       <div className="flex flex-col md:flex-row gap-4">
-        {/* Main large image */}
-        <div className="md:w-3/5 relative group">
+        {/* Main large image - fixed height to match grid */}
+        <div className="md:w-3/5 relative group h-full">
           <Link to={premiumListing ? `/car-details/${premiumListing.id}` : "/listings"}>
-            <div className="relative rounded-md overflow-hidden">
+            <div className="relative rounded-md overflow-hidden h-full">
               <img 
                 src={premiumListing?.primary_image || fallbackMainImage} 
                 alt={premiumListing?.name || "Premium race car on track"} 
-                className="rounded-md w-full aspect-square object-cover transition-transform duration-500 group-hover:scale-105"
+                className="rounded-md w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                style={{ aspectRatio: "1/1", objectFit: "cover" }}
               />
               {premiumListing && (
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 text-white">
@@ -96,19 +97,19 @@ const HeroSection = () => {
           </Link>
         </div>
         
-        {/* Right side with 4 smaller images */}
-        <div className="md:w-2/5 space-y-4">
+        {/* Right side with 4 smaller images - made explicitly same height as left side */}
+        <div className="md:w-2/5 h-full">
           {/* 2x2 grid of smaller images */}
           <div className="grid grid-cols-2 gap-4 h-full">
             {/* Top row */}
-            <div className="h-1/2">
+            <div className="aspect-square">
               <img 
                 src={fallbackSmallImages[0]} 
                 alt="Race car angle view" 
                 className="rounded-md w-full h-full object-cover"
               />
             </div>
-            <div className="h-1/2">
+            <div className="aspect-square">
               <img 
                 src={fallbackSmallImages[1]} 
                 alt="Race car rear view" 
@@ -117,14 +118,14 @@ const HeroSection = () => {
             </div>
             
             {/* Bottom row */}
-            <div className="h-1/2">
+            <div className="aspect-square">
               <img 
                 src={fallbackSmallImages[2]} 
                 alt="Race car engine" 
                 className="rounded-md w-full h-full object-cover"
               />
             </div>
-            <div className="h-1/2">
+            <div className="aspect-square">
               <img 
                 src={fallbackSmallImages[3]} 
                 alt="Race car cockpit" 
