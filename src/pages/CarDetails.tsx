@@ -1,12 +1,15 @@
 
-import React from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { MessageCircle, Share2, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
+import ContactSellerDialog from '@/components/ContactSellerDialog';
+import { toast } from 'sonner';
 
 // Mock data - in a real app this would come from an API
 const mockCarData = {
@@ -29,6 +32,7 @@ const mockCarData = {
     subcategory: 'Formula 1',
   },
   seller: {
+    id: '123', // Added seller ID for the messaging feature
     name: 'John Smith',
     joinedDate: 'May 2023',
     listings: 5,
@@ -37,7 +41,10 @@ const mockCarData = {
 
 const CarDetails = () => {
   const { id } = useParams();
-  const [activeImageIndex, setActiveImageIndex] = React.useState(0);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const navigate = useNavigate();
 
   const nextImage = () => {
     setActiveImageIndex((prev) => (prev + 1) % mockCarData.images.length);
@@ -45,6 +52,25 @@ const CarDetails = () => {
 
   const prevImage = () => {
     setActiveImageIndex((prev) => (prev - 1 + mockCarData.images.length) % mockCarData.images.length);
+  };
+
+  useEffect(() => {
+    // Check if user is logged in
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+    
+    checkAuth();
+  }, []);
+
+  const handleContactClick = () => {
+    if (!isLoggedIn) {
+      toast.error('Please login to contact the seller');
+      navigate('/login');
+      return;
+    }
+    setIsContactModalOpen(true);
   };
 
   return (
@@ -100,7 +126,10 @@ const CarDetails = () => {
               <p className="text-3xl font-bold text-primary mb-4">{mockCarData.price}</p>
               
               <div className="flex gap-4 mb-6">
-                <Button className="flex-1 flex justify-center gap-2">
+                <Button 
+                  className="flex-1 flex justify-center gap-2"
+                  onClick={handleContactClick}
+                >
                   <MessageCircle size={18} /> Contact Seller
                 </Button>
                 <Button variant="outline" size="icon">
@@ -163,6 +192,15 @@ const CarDetails = () => {
         </div>
       </main>
       <Footer />
+      
+      {/* Contact Seller Dialog */}
+      <ContactSellerDialog
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
+        carId={id || '1'}
+        carTitle={mockCarData.title}
+        sellerId={mockCarData.seller.id}
+      />
     </div>
   );
 };
