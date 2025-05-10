@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type CategoryType = {
   title: string;
@@ -50,27 +51,32 @@ const categories: CategoryType[] = [
 ];
 
 const CategoryCard = ({ category }: { category: CategoryType }) => {
+  const isMobile = useIsMobile();
+  
   return (
     <div className="flex flex-col">
       <div className="overflow-hidden rounded-md mb-2">
         <img
           src={category.image}
           alt={category.title}
-          className="w-full h-32 object-cover transform hover:scale-105 transition-transform duration-300"
+          className="w-full h-24 sm:h-32 object-cover transform hover:scale-105 transition-transform duration-300"
         />
       </div>
-      <h3 className="font-medium text-sm">{category.title}</h3>
-      <a href="#" className="text-sm text-racecar-red hover:underline">Browse All</a>
+      <h3 className="font-medium text-xs sm:text-sm">{category.title}</h3>
+      <a href="#" className="text-xs sm:text-sm text-racecar-red hover:underline">Browse All</a>
     </div>
   );
 };
 
 const PopularCategories = () => {
+  const isMobile = useIsMobile();
+  const displayCount = isMobile ? 6 : 10;
+  
   return (
     <div className="container mx-auto px-4 py-6">
-      <h2 className="text-2xl font-bold mb-6">Popular categories</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {categories.slice(0, 10).map((category, index) => (
+      <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Popular categories</h2>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
+        {categories.slice(0, displayCount).map((category, index) => (
           <CategoryCard key={index} category={category} />
         ))}
       </div>

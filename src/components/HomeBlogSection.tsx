@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Sample blog posts data with dates formatted as MM/DD/YY
 const featuredPosts = [
@@ -40,37 +41,39 @@ const featuredPosts = [
 ];
 
 const HomeBlogSection = () => {
+  const isMobile = useIsMobile();
+  
   // Get the main featured post and the remaining posts for the sidebar
   const mainPost = featuredPosts[0];
   const sidebarPosts = featuredPosts.slice(1, 4); // Get posts 2-4 for the sidebar
   
   return (
-    <div className="container mx-auto px-4 py-12 bg-white">
-      <h1 className="text-4xl font-bold mb-8 text-black">Latest Articles</h1>
+    <div className="container mx-auto px-4 py-8 sm:py-12 bg-white">
+      <h1 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-8 text-black">Latest Articles</h1>
       
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
         {/* Featured article - with height adjusted to match sidebar */}
         <div className="lg:col-span-7">
           <Link to={`/blog/${mainPost.slug}`} className="block h-full">
-            <div className="rounded-lg overflow-hidden shadow-md h-[21.5rem] relative">
+            <div className="rounded-lg overflow-hidden shadow-md h-[16rem] sm:h-[21.5rem] relative">
               <img 
                 src={mainPost.image} 
                 alt={mainPost.title} 
                 className="w-full h-full object-cover"
               />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
-                <h2 className="font-bold text-2xl text-white">{mainPost.title}</h2>
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 sm:p-6">
+                <h2 className="font-bold text-xl sm:text-2xl text-white">{mainPost.title}</h2>
               </div>
             </div>
           </Link>
         </div>
         
         {/* Sidebar articles - showing all sidebar articles */}
-        <div className="lg:col-span-5 space-y-6 flex flex-col h-[21.5rem]">
+        <div className="lg:col-span-5 space-y-4 sm:space-y-6 flex flex-col">
           {sidebarPosts.map((post) => (
             <Link key={post.id} to={`/blog/${post.slug}`} className="block">
-              <div className="flex items-start space-x-4">
-                <div className="w-32 h-24 flex-shrink-0">
+              <div className="flex items-start space-x-3 sm:space-x-4">
+                <div className="w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0">
                   <img 
                     src={post.image} 
                     alt={post.title} 
@@ -78,8 +81,8 @@ const HomeBlogSection = () => {
                   />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-lg text-black line-clamp-2">{post.title}</h3>
-                  <p className="text-gray-500 text-sm mt-1">{post.date}</p>
+                  <h3 className="font-bold text-base sm:text-lg text-black line-clamp-2">{post.title}</h3>
+                  <p className="text-gray-500 text-xs sm:text-sm mt-1">{post.date}</p>
                 </div>
               </div>
             </Link>

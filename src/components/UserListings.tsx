@@ -66,7 +66,7 @@ const UserListings = ({ userId }: UserListingsProps) => {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {listings.map((listing) => (
           <Card key={listing.id} className="overflow-hidden">
             <div className="relative h-40">
@@ -92,8 +92,8 @@ const UserListings = ({ userId }: UserListingsProps) => {
             </div>
             <CardContent className="p-4">
               <h4 className="font-semibold truncate">{listing.name}</h4>
-              <p className="text-sm text-gray-500 mt-1">{listing.short_description}</p>
-              <div className="flex justify-between mt-3">
+              <p className="text-sm text-gray-500 mt-1 line-clamp-2">{listing.short_description}</p>
+              <div className="flex flex-wrap justify-between gap-2 mt-3">
                 <Link to={`/car-details/${listing.id}`}>
                   <Button variant="outline" size="sm">View</Button>
                 </Link>

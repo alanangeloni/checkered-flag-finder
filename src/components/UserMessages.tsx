@@ -8,6 +8,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Mail, Inbox } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface UserMessagesProps {
   userId: string;
@@ -17,6 +18,7 @@ const UserMessages = ({ userId }: UserMessagesProps) => {
   const [messages, setMessages] = useState<MessageWithProfiles[]>([]);
   const [loading, setLoading] = useState(true);
   const [messageType, setMessageType] = useState<'received' | 'sent'>('received');
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const fetchMessages = async () => {
@@ -87,21 +89,23 @@ const UserMessages = ({ userId }: UserMessagesProps) => {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0">
         <h3 className="text-xl font-medium">Messages</h3>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <Button 
             variant={messageType === 'received' ? 'default' : 'outline'} 
-            size="sm"
+            size={isMobile ? "sm" : "sm"}
             onClick={() => setMessageType('received')}
+            className="flex-1 sm:flex-initial"
           >
             <Inbox className="h-4 w-4 mr-2" />
             Inbox
           </Button>
           <Button 
             variant={messageType === 'sent' ? 'default' : 'outline'} 
-            size="sm"
+            size={isMobile ? "sm" : "sm"}
             onClick={() => setMessageType('sent')}
+            className="flex-1 sm:flex-initial"
           >
             <Mail className="h-4 w-4 mr-2" />
             Sent
@@ -126,7 +130,7 @@ const UserMessages = ({ userId }: UserMessagesProps) => {
                 className={`transition-colors ${!message.read && messageType === 'received' ? 'bg-blue-50' : ''}`}
               >
                 <CardContent className="p-4">
-                  <div className="flex justify-between items-start">
+                  <div className="flex flex-col sm:flex-row justify-between items-start gap-2">
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{otherUser?.full_name || otherUser?.username || 'User'}</span>
@@ -140,15 +144,15 @@ const UserMessages = ({ userId }: UserMessagesProps) => {
                     </div>
                     
                     {message.car_id && (
-                      <Link to={`/car-details/${message.car_id}`}>
+                      <Link to={`/car-details/${message.car_id}`} className="mt-2 sm:mt-0">
                         <Button variant="outline" size="sm">View Listing</Button>
                       </Link>
                     )}
                   </div>
                   
-                  <p className="mt-3">{message.content}</p>
+                  <p className="mt-3 break-words">{message.content}</p>
                   
-                  <div className="flex justify-end mt-3">
+                  <div className="flex flex-wrap justify-end gap-2 mt-3">
                     <Link to={`/messages/${message.id}`}>
                       <Button size="sm">
                         {messageType === 'received' ? 'Reply' : 'View'}
@@ -158,8 +162,7 @@ const UserMessages = ({ userId }: UserMessagesProps) => {
                     {!message.read && messageType === 'received' && (
                       <Button 
                         variant="outline" 
-                        size="sm" 
-                        className="ml-2"
+                        size="sm"
                         onClick={() => markAsRead(message.id)}
                       >
                         Mark as Read
