@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { mail, inbox } from 'lucide-react';
+import { Mail, Inbox } from 'lucide-react';
 
 interface UserMessagesProps {
   userId: string;
@@ -95,7 +95,7 @@ const UserMessages = ({ userId }: UserMessagesProps) => {
             size="sm"
             onClick={() => setMessageType('received')}
           >
-            <inbox className="h-4 w-4 mr-2" />
+            <Inbox className="h-4 w-4 mr-2" />
             Inbox
           </Button>
           <Button 
@@ -103,7 +103,7 @@ const UserMessages = ({ userId }: UserMessagesProps) => {
             size="sm"
             onClick={() => setMessageType('sent')}
           >
-            <mail className="h-4 w-4 mr-2" />
+            <Mail className="h-4 w-4 mr-2" />
             Sent
           </Button>
         </div>

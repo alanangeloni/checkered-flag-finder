@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { send } from 'lucide-react';
+import { Send } from 'lucide-react';
 
 const Messages = () => {
   const { id } = useParams();
@@ -174,7 +174,7 @@ const Messages = () => {
                         disabled={!replyContent.trim() || sending}
                         onClick={sendReply}
                       >
-                        <send className="h-4 w-4 mr-2" />
+                        <Send className="h-4 w-4 mr-2" />
                         {sending ? 'Sending...' : 'Send Reply'}
                       </Button>
                     </div>
