@@ -21,9 +21,9 @@ const RelatedCarListings = ({ listings, currentCarId }: RelatedCarListingsProps)
   }
 
   return (
-    <div className="mb-6">
+    <div>
       <h3 className="text-lg font-semibold mb-3">More Listings</h3>
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {filteredListings.map((car) => (
           <Card key={car.id} className="overflow-hidden">
             <div className="flex flex-col">
