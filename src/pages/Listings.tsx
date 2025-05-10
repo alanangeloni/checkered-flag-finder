@@ -121,7 +121,7 @@ const Listings = () => {
       <Header />
       <main className="flex-grow bg-gray-50">
         <div className="container mx-auto px-4 py-8">
-          <h1 className="text-4xl font-bold mb-8 text-center">Race Cars for Sale</h1>
+          
           
           {/* Modern search and filter bar with gradient background */}
           <div className="rounded-xl shadow-lg mb-8 overflow-hidden">
