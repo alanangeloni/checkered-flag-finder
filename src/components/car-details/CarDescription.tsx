@@ -2,7 +2,7 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Category, FileText } from 'lucide-react';
+import { FileText, Tag } from 'lucide-react';
 
 interface CarDescriptionProps {
   detailedDescription?: string | null;
@@ -27,7 +27,7 @@ const CarDescription = ({
         {/* Race Car Categories Section */}
         {(raceCarType || categoryName || subcategoryName) && (
           <div className="mb-4 flex flex-wrap gap-2 items-center">
-            <Category size={18} className="text-gray-500 mr-1" />
+            <Tag size={18} className="text-gray-500 mr-1" />
             
             {categoryName && (
               <Badge variant="outline" className="bg-gray-100">
