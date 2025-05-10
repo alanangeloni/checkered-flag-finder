@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,11 +13,9 @@ import CarImageGallery from '@/components/car-details/CarImageGallery';
 import CarPriceInfo from '@/components/car-details/CarPriceInfo';
 import CarSpecifications from '@/components/car-details/CarSpecifications';
 import CarDescription from '@/components/car-details/CarDescription';
-import CarSidebar from '@/components/car-details/CarSidebar';
-import { SidebarProvider, Sidebar, SidebarContent, SidebarInset } from '@/components/ui/sidebar';
 
 // Mock data to use as fallback for demo purposes
-export const mockCarListings = {
+const mockCarListings = {
   1: {
     id: "mock-1",
     name: "2021 Ferrari 488 GTB",
@@ -313,68 +312,56 @@ const CarDetails = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <Header />
-      <SidebarProvider>
-        <div className="flex-grow flex w-full">
-          <Sidebar variant="inset" collapsible="icon">
-            <SidebarContent>
-              <CarSidebar currentCarId={id} />
-            </SidebarContent>
-          </Sidebar>
-          
-          <SidebarInset className="py-6 px-4">
-            <div className="max-w-6xl mx-auto">
-              {/* Title and subtitle */}
-              <div className="mb-4">
-                <h1 className="text-2xl md:text-3xl font-bold">{carListing?.name}</h1>
-                <p className="text-gray-600">{carListing?.short_description}</p>
-              </div>
-              
-              <div className="grid grid-cols-1 gap-6">
-                {/* Main Content Area */}
-                <div>
-                  {/* Image Gallery Component */}
-                  <CarImageGallery 
-                    images={images} 
-                    carName={carListing?.name || ''} 
-                    isFeatured={carListing?.featured || false} 
-                  />
-                  
-                  {/* Price and Contact Info Component */}
-                  <CarPriceInfo 
-                    price={carListing?.price || 0}
-                    raceCarType={carListing?.race_car_type}
-                    sellerType={carListing?.seller_type}
-                    createdAt={carListing?.created_at || new Date().toISOString()}
-                    onContactClick={handleContactClick}
-                  />
-                  
-                  {/* Vehicle Specifications Component */}
-                  <CarSpecifications carListing={carListing} />
-                  
-                  {/* Description Component */}
-                  <CarDescription 
-                    detailedDescription={carListing?.detailed_description}
-                    shortDescription={carListing?.short_description}
-                    raceCarType={carListing?.race_car_type}
-                    categoryName={carListing?.category_name}
-                    subcategoryName={carListing?.subcategory_name}
-                  />
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-4 justify-end">
-                    <Button variant="outline" size="icon">
-                      <Share2 className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <Heart className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </SidebarInset>
+      <main className="flex-grow container mx-auto px-4 py-6">
+        {/* Title and subtitle */}
+        <div className="mb-4">
+          <h1 className="text-2xl md:text-3xl font-bold">{carListing?.name}</h1>
+          <p className="text-gray-600">{carListing?.short_description}</p>
         </div>
-      </SidebarProvider>
+        
+        <div className="grid grid-cols-1 gap-6">
+          {/* Main Content Area */}
+          <div>
+            {/* Image Gallery Component */}
+            <CarImageGallery 
+              images={images} 
+              carName={carListing?.name || ''} 
+              isFeatured={carListing?.featured || false} 
+            />
+            
+            {/* Price and Contact Info Component */}
+            <CarPriceInfo 
+              price={carListing?.price || 0}
+              raceCarType={carListing?.race_car_type}
+              sellerType={carListing?.seller_type}
+              createdAt={carListing?.created_at || new Date().toISOString()}
+              onContactClick={handleContactClick}
+            />
+            
+            {/* Vehicle Specifications Component */}
+            <CarSpecifications carListing={carListing} />
+            
+            {/* Description Component */}
+            <CarDescription 
+              detailedDescription={carListing?.detailed_description}
+              shortDescription={carListing?.short_description}
+              raceCarType={carListing?.race_car_type}
+              categoryName={carListing?.category_name}
+              subcategoryName={carListing?.subcategory_name}
+            />
+
+            {/* Action Buttons */}
+            <div className="flex gap-4 justify-end">
+              <Button variant="outline" size="icon">
+                <Share2 className="h-4 w-4" />
+              </Button>
+              <Button variant="outline" size="icon">
+                <Heart className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </main>
       <Footer />
       
       {/* Contact Seller Dialog */}

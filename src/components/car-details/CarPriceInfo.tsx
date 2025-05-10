@@ -1,10 +1,7 @@
-
 import React from 'react';
-import { MessageCircle, Tag, FileText, User, Calendar } from 'lucide-react';
+import { MessageCircle, Tag, FileText, User } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
-
 interface CarPriceInfoProps {
   price: number;
   raceCarType: string | null;
@@ -12,7 +9,6 @@ interface CarPriceInfoProps {
   createdAt: string;
   onContactClick: () => void;
 }
-
 const CarPriceInfo = ({
   price,
   raceCarType,
@@ -20,9 +16,6 @@ const CarPriceInfo = ({
   createdAt,
   onContactClick
 }: CarPriceInfoProps) => {
-  // Format the date (e.g., "May 10, 2023")
-  const formattedDate = createdAt ? format(new Date(createdAt), 'MMM d, yyyy') : 'N/A';
-  
   return <Card className="mb-6 shadow-sm">
       <CardContent className="p-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -43,21 +36,7 @@ const CarPriceInfo = ({
               </div>
             </div>
             
-            <div className="flex items-center gap-2">
-              <User size={18} className="text-gray-500" />
-              <div>
-                <div className="text-sm text-gray-500">Seller</div>
-                <div className="font-semibold">{sellerType || 'N/A'}</div>
-              </div>
-            </div>
             
-            <div className="flex items-center gap-2">
-              <Calendar size={18} className="text-gray-500" />
-              <div>
-                <div className="text-sm text-gray-500">Listed On</div>
-                <div className="font-semibold">{formattedDate}</div>
-              </div>
-            </div>
           </div>
           
           <div className="flex gap-2 w-full sm:w-auto">
@@ -67,8 +46,9 @@ const CarPriceInfo = ({
             </Button>
           </div>
         </div>
+        
+        
       </CardContent>
     </Card>;
 };
-
 export default CarPriceInfo;

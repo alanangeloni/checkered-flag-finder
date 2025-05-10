@@ -5,7 +5,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { CarListingWithImages } from '@/types/customTypes';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 
 interface UserListingsProps {
@@ -94,11 +93,6 @@ const UserListings = ({ userId }: UserListingsProps) => {
             <CardContent className="p-4">
               <h4 className="font-semibold truncate">{listing.name}</h4>
               <p className="text-sm text-gray-500 mt-1 line-clamp-2">{listing.short_description}</p>
-              
-              {listing.race_car_type && (
-                <Badge variant="destructive" className="mt-2 mr-1">{listing.race_car_type}</Badge>
-              )}
-              
               <div className="flex flex-wrap justify-between gap-2 mt-3">
                 <Link to={`/car-details/${listing.id}`}>
                   <Button variant="outline" size="sm">View</Button>
