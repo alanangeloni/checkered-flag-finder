@@ -6,88 +6,67 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
-import {
-  Card,
-  CardContent,
-} from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Card, CardContent } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Filter, Search, ChevronDown } from 'lucide-react';
 
 // Mock data for demonstration
-const mockListings = [
-  {
-    id: 1,
-    title: "2021 Ferrari 488 GTB",
-    price: 299000,
-    location: "Miami, FL",
-    mileage: 3500,
-    image: "https://images.unsplash.com/photo-1592198084033-aade902d1aae",
-    category: "Sport",
-    subcategory: "Luxury"
-  },
-  {
-    id: 2, 
-    title: "2022 Porsche 911 GT3",
-    price: 189000,
-    location: "Los Angeles, CA",
-    mileage: 1200,
-    image: "https://images.unsplash.com/photo-1503376780353-7e6692767b70",
-    category: "Sport",
-    subcategory: "Performance"
-  },
-  {
-    id: 3,
-    title: "2020 Lamborghini Huracán",
-    price: 275000,
-    location: "Las Vegas, NV",
-    mileage: 5200,
-    image: "https://images.unsplash.com/photo-1514867644123-6385d58d3cd4",
-    category: "Sport",
-    subcategory: "Luxury"
-  },
-  {
-    id: 4,
-    title: "2019 McLaren 720S",
-    price: 245000,
-    location: "New York, NY",
-    mileage: 8900,
-    image: "https://images.unsplash.com/photo-1544636331-e26879cd4d9b",
-    category: "Sport",
-    subcategory: "Supercar"
-  },
-  {
-    id: 5,
-    title: "2023 Aston Martin Vantage",
-    price: 178000,
-    location: "Chicago, IL",
-    mileage: 650,
-    image: "https://images.unsplash.com/photo-1542362567-b07e54358753",
-    category: "Sport",
-    subcategory: "Luxury"
-  },
-  {
-    id: 6,
-    title: "2018 Nissan GT-R Nismo",
-    price: 135000,
-    location: "Seattle, WA",
-    mileage: 12500,
-    image: "public/lovable-uploads/0142baeb-373b-448f-9a23-a1d1bc774af9.png",
-    category: "Sport",
-    subcategory: "Performance"
-  }
-];
+const mockListings = [{
+  id: 1,
+  title: "2021 Ferrari 488 GTB",
+  price: 299000,
+  location: "Miami, FL",
+  mileage: 3500,
+  image: "https://images.unsplash.com/photo-1592198084033-aade902d1aae",
+  category: "Sport",
+  subcategory: "Luxury"
+}, {
+  id: 2,
+  title: "2022 Porsche 911 GT3",
+  price: 189000,
+  location: "Los Angeles, CA",
+  mileage: 1200,
+  image: "https://images.unsplash.com/photo-1503376780353-7e6692767b70",
+  category: "Sport",
+  subcategory: "Performance"
+}, {
+  id: 3,
+  title: "2020 Lamborghini Huracán",
+  price: 275000,
+  location: "Las Vegas, NV",
+  mileage: 5200,
+  image: "https://images.unsplash.com/photo-1514867644123-6385d58d3cd4",
+  category: "Sport",
+  subcategory: "Luxury"
+}, {
+  id: 4,
+  title: "2019 McLaren 720S",
+  price: 245000,
+  location: "New York, NY",
+  mileage: 8900,
+  image: "https://images.unsplash.com/photo-1544636331-e26879cd4d9b",
+  category: "Sport",
+  subcategory: "Supercar"
+}, {
+  id: 5,
+  title: "2023 Aston Martin Vantage",
+  price: 178000,
+  location: "Chicago, IL",
+  mileage: 650,
+  image: "https://images.unsplash.com/photo-1542362567-b07e54358753",
+  category: "Sport",
+  subcategory: "Luxury"
+}, {
+  id: 6,
+  title: "2018 Nissan GT-R Nismo",
+  price: 135000,
+  location: "Seattle, WA",
+  mileage: 12500,
+  image: "public/lovable-uploads/0142baeb-373b-448f-9a23-a1d1bc774af9.png",
+  category: "Sport",
+  subcategory: "Performance"
+}];
 
 // Mock categories and subcategories
 const categories = ["All Categories", "Sport", "F1", "Rally", "Classic"];
@@ -103,7 +82,6 @@ const subcategories = {
 const formatPrice = (price: number) => {
   return `$${price.toLocaleString()}`;
 };
-
 const Listings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([100000, 300000]);
@@ -118,15 +96,10 @@ const Listings = () => {
 
   // Filter listings based on search, price range, category, and subcategory
   const filteredListings = mockListings.filter(listing => {
-    const matchesSearch = listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          listing.location.toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const matchesSearch = listing.title.toLowerCase().includes(searchTerm.toLowerCase()) || listing.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPrice = listing.price >= priceRange[0] && listing.price <= priceRange[1];
-    
     const matchesCategory = selectedCategory === "All Categories" || listing.category === selectedCategory;
-    
     const matchesSubcategory = selectedSubcategory === "All Subcategories" || listing.subcategory === selectedSubcategory;
-    
     return matchesSearch && matchesPrice && matchesCategory && matchesSubcategory;
   });
 
@@ -144,9 +117,7 @@ const Listings = () => {
     setSelectedCategory(category);
     setSelectedSubcategory("All Subcategories");
   };
-
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-grow bg-gray-50">
         <div className="container mx-auto px-4 py-8">
@@ -155,39 +126,29 @@ const Listings = () => {
           {/* Modern search and filter bar with gradient background */}
           <div className="rounded-xl shadow-lg mb-8 overflow-hidden">
             <div className="bg-gradient-to-r from-teal-600 to-blue-600 p-6 text-white">
-              <h2 className="text-2xl font-bold text-center mb-2">Find Your Dream Race Car</h2>
+              <h2 className="text-2xl font-bold text-center mb-2">Race Cars for Sale</h2>
               <p className="text-center mb-6">Browse our exclusive collection of high-performance vehicles</p>
               
               <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                <Select
-                  value={selectedCategory}
-                  onValueChange={handleCategoryChange}
-                >
+                <Select value={selectedCategory} onValueChange={handleCategoryChange}>
                   <SelectTrigger className="bg-white/20 border-0 text-white backdrop-blur-sm">
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category} value={category}>
+                    {categories.map(category => <SelectItem key={category} value={category}>
                         {category}
-                      </SelectItem>
-                    ))}
+                      </SelectItem>)}
                   </SelectContent>
                 </Select>
 
-                <Select
-                  value={selectedSubcategory}
-                  onValueChange={setSelectedSubcategory}
-                >
+                <Select value={selectedSubcategory} onValueChange={setSelectedSubcategory}>
                   <SelectTrigger className="bg-white/20 border-0 text-white backdrop-blur-sm">
                     <SelectValue placeholder="Subcategory" />
                   </SelectTrigger>
                   <SelectContent>
-                    {subcategories[selectedCategory as keyof typeof subcategories]?.map((sub) => (
-                      <SelectItem key={sub} value={sub}>
+                    {subcategories[selectedCategory as keyof typeof subcategories]?.map(sub => <SelectItem key={sub} value={sub}>
                         {sub}
-                      </SelectItem>
-                    ))}
+                      </SelectItem>)}
                   </SelectContent>
                 </Select>
 
@@ -195,19 +156,10 @@ const Listings = () => {
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search className="text-white/70" size={18} />
                   </div>
-                  <Input
-                    type="text"
-                    placeholder="Search by make, model, or location..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-white/20 border-0 text-white placeholder:text-white/70"
-                  />
+                  <Input type="text" placeholder="Search by make, model, or location..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-10 bg-white/20 border-0 text-white placeholder:text-white/70" />
                 </div>
 
-                <Select
-                  value={sort}
-                  onValueChange={(value) => setSort(value)}
-                >
+                <Select value={sort} onValueChange={value => setSort(value)}>
                   <SelectTrigger className="bg-white/20 border-0 text-white backdrop-blur-sm">
                     <SelectValue placeholder="Sort By" />
                   </SelectTrigger>
@@ -219,11 +171,7 @@ const Listings = () => {
                   </SelectContent>
                 </Select>
 
-                <Button 
-                  variant="outline" 
-                  className="bg-white text-blue-600 hover:bg-white/90 hover:text-blue-700 border-0"
-                  onClick={() => setShowFilters(!showFilters)}
-                >
+                <Button variant="outline" className="bg-white text-blue-600 hover:bg-white/90 hover:text-blue-700 border-0" onClick={() => setShowFilters(!showFilters)}>
                   <Filter size={18} className="mr-2" />
                   More Filters
                 </Button>
@@ -231,35 +179,22 @@ const Listings = () => {
             </div>
 
             {/* Expandable filter section */}
-            {showFilters && (
-              <div className="bg-white p-5">
+            {showFilters && <div className="bg-white p-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <Label htmlFor="price-range" className="font-medium mb-2 block">
                       Price Range: {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
                     </Label>
-                    <Slider
-                      id="price-range"
-                      defaultValue={[priceRange[0], priceRange[1]]}
-                      min={minPrice}
-                      max={maxPrice}
-                      step={5000}
-                      onValueChange={(values) => setPriceRange(values as [number, number])}
-                      className="my-6"
-                    />
+                    <Slider id="price-range" defaultValue={[priceRange[0], priceRange[1]]} min={minPrice} max={maxPrice} step={5000} onValueChange={values => setPriceRange(values as [number, number])} className="my-6" />
                   </div>
                   <div className="flex items-end justify-end">
-                    <Button 
-                      variant="outline"
-                      className="mr-2" 
-                      onClick={() => {
-                        setSearchTerm('');
-                        setPriceRange([minPrice, maxPrice]);
-                        setSort('newest');
-                        setSelectedCategory("All Categories");
-                        setSelectedSubcategory("All Subcategories");
-                      }}
-                    >
+                    <Button variant="outline" className="mr-2" onClick={() => {
+                  setSearchTerm('');
+                  setPriceRange([minPrice, maxPrice]);
+                  setSort('newest');
+                  setSelectedCategory("All Categories");
+                  setSelectedSubcategory("All Subcategories");
+                }}>
                       Reset All
                     </Button>
                     <Button>
@@ -267,21 +202,15 @@ const Listings = () => {
                     </Button>
                   </div>
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
 
           {/* Listings grid with updated card design to match reference image */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {sortedListings.map(car => (
-              <Link to={`/car-details/${car.id}`} key={car.id}>
+            {sortedListings.map(car => <Link to={`/car-details/${car.id}`} key={car.id}>
                 <Card className="overflow-hidden rounded-lg hover:shadow-lg transition-shadow h-full border-0 shadow">
                   <div className="relative">
-                    <img 
-                      src={car.image} 
-                      alt={car.title} 
-                      className="w-full h-48 object-cover"
-                    />
+                    <img src={car.image} alt={car.title} className="w-full h-48 object-cover" />
                     <div className="absolute bottom-0 left-0 bg-white text-black font-bold px-4 py-1 m-3 rounded">
                       ${car.price.toLocaleString()}
                     </div>
@@ -296,32 +225,24 @@ const Listings = () => {
                     </div>
                   </CardContent>
                 </Card>
-              </Link>
-            ))}
+              </Link>)}
           </div>
 
-          {filteredListings.length === 0 && (
-            <div className="text-center py-16 bg-white rounded-lg shadow-sm mt-8">
+          {filteredListings.length === 0 && <div className="text-center py-16 bg-white rounded-lg shadow-sm mt-8">
               <h3 className="text-xl font-medium mb-2">No listings found</h3>
               <p className="text-gray-500">Try adjusting your search or filter criteria</p>
-              <Button 
-                className="mt-4"
-                onClick={() => {
-                  setSearchTerm('');
-                  setPriceRange([minPrice, maxPrice]);
-                  setSelectedCategory("All Categories");
-                  setSelectedSubcategory("All Subcategories");
-                }}
-              >
+              <Button className="mt-4" onClick={() => {
+            setSearchTerm('');
+            setPriceRange([minPrice, maxPrice]);
+            setSelectedCategory("All Categories");
+            setSelectedSubcategory("All Subcategories");
+          }}>
                 Reset Filters
               </Button>
-            </div>
-          )}
+            </div>}
         </div>
       </main>
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default Listings;
