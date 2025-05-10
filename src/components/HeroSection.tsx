@@ -67,11 +67,11 @@ const HeroSection = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        {/* Main large image - now in a 3-column grid space */}
+        {/* Main large image - with max-height constraint */}
         <div className="md:col-span-3 relative group">
           <Link to={premiumListing ? `/car-details/${premiumListing.id}` : "/listings"}>
-            <div className="relative rounded-md overflow-hidden">
-              <AspectRatio ratio={1/1}>
+            <div className="relative rounded-md overflow-hidden" style={{ maxHeight: "500px" }}>
+              <AspectRatio ratio={16/9}>
                 <img 
                   src={premiumListing?.primary_image || fallbackMainImage} 
                   alt={premiumListing?.name || "Premium race car on track"} 
@@ -99,7 +99,7 @@ const HeroSection = () => {
           </Link>
         </div>
         
-        {/* Right side with 4 smaller images - now in a 2-column grid space */}
+        {/* Right side with 4 smaller images - maintained at same height */}
         <div className="md:col-span-2">
           <div className="grid grid-cols-2 gap-4 h-full">
             {/* Top row */}
