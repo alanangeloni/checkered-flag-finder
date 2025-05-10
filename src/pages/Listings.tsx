@@ -126,7 +126,7 @@ const Listings = () => {
           {/* Modern search and filter bar with gradient background */}
           <div className="rounded-xl shadow-lg mb-8 overflow-hidden">
             <div className="bg-gradient-to-r from-teal-600 to-blue-600 p-6 text-white">
-              <h2 className="text-2xl font-bold text-center mb-2">Race Cars for Sale</h2>
+              <h2 className="font-bold text-center mb-2 text-4xl">Race Cars for Sale</h2>
               <p className="text-center mb-6">Browse our exclusive collection of high-performance vehicles</p>
               
               <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
