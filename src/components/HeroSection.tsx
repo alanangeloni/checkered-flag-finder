@@ -67,11 +67,11 @@ const HeroSection = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-        {/* Main large image - with max-height constraint */}
-        <div className="md:col-span-3 relative group">
-          <Link to={premiumListing ? `/car-details/${premiumListing.id}` : "/listings"}>
-            <div className="relative rounded-md overflow-hidden" style={{ maxHeight: "500px" }}>
-              <AspectRatio ratio={16/9}>
+        {/* Main large image */}
+        <div className="md:col-span-3 relative group h-full">
+          <Link to={premiumListing ? `/car-details/${premiumListing.id}` : "/listings"} className="h-full block">
+            <div className="relative rounded-md overflow-hidden h-full" style={{ maxHeight: "400px" }}>
+              <AspectRatio ratio={16/10} className="h-full">
                 <img 
                   src={premiumListing?.primary_image || fallbackMainImage} 
                   alt={premiumListing?.name || "Premium race car on track"} 
@@ -99,12 +99,12 @@ const HeroSection = () => {
           </Link>
         </div>
         
-        {/* Right side with 4 smaller images - maintained at same height */}
-        <div className="md:col-span-2">
-          <div className="grid grid-cols-2 gap-4 h-full">
+        {/* Right side with 4 smaller images */}
+        <div className="md:col-span-2 h-full">
+          <div className="grid grid-cols-2 gap-4 h-full" style={{ maxHeight: "400px" }}>
             {/* Top row */}
-            <div>
-              <AspectRatio ratio={1/1}>
+            <div className="h-1/2">
+              <AspectRatio ratio={1/1} className="h-full">
                 <img 
                   src={fallbackSmallImages[0]} 
                   alt="Race car angle view" 
@@ -112,8 +112,8 @@ const HeroSection = () => {
                 />
               </AspectRatio>
             </div>
-            <div>
-              <AspectRatio ratio={1/1}>
+            <div className="h-1/2">
+              <AspectRatio ratio={1/1} className="h-full">
                 <img 
                   src={fallbackSmallImages[1]} 
                   alt="Race car rear view" 
@@ -123,8 +123,8 @@ const HeroSection = () => {
             </div>
             
             {/* Bottom row */}
-            <div>
-              <AspectRatio ratio={1/1}>
+            <div className="h-1/2">
+              <AspectRatio ratio={1/1} className="h-full">
                 <img 
                   src={fallbackSmallImages[2]} 
                   alt="Race car engine" 
@@ -132,8 +132,8 @@ const HeroSection = () => {
                 />
               </AspectRatio>
             </div>
-            <div>
-              <AspectRatio ratio={1/1}>
+            <div className="h-1/2">
+              <AspectRatio ratio={1/1} className="h-full">
                 <img 
                   src={fallbackSmallImages[3]} 
                   alt="Race car cockpit" 
