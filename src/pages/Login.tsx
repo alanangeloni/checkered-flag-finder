@@ -64,6 +64,7 @@ const Login = () => {
       }
       
       toast.success('Login successful!');
+      // Explicitly navigate to homepage after successful login
       navigate('/');
     } catch (error: any) {
       toast.error(error.message || 'Login failed. Please check your credentials.');
