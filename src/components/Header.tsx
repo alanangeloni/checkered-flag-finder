@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import RacecarLogo from './RacecarLogo';
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger, navigationMenuTriggerStyle } from '@/components/ui/navigation-menu';
 import { Button } from '@/components/ui/button';
-import { Menu, Search, UserRound, X, Settings } from 'lucide-react';
+import { Menu, Search, UserRound, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -12,13 +12,10 @@ import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
 const Header = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-
   useEffect(() => {
     // Check current auth state
     const checkUser = async () => {
@@ -27,20 +24,7 @@ const Header = () => {
           session
         }
       } = await supabase.auth.getSession();
-      
-      const currentUser = session?.user || null;
-      setUser(currentUser);
-      
-      // Check if user is admin
-      if (currentUser) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', currentUser.id)
-          .single();
-          
-        setIsAdmin(data?.is_admin || false);
-      }
+      setUser(session?.user || null);
     };
     checkUser();
 
@@ -49,26 +33,12 @@ const Header = () => {
       data: {
         subscription
       }
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event, session?.user);
       setUser(session?.user || null);
-      
-      // Check admin status on auth change
-      if (session?.user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', session.user.id)
-          .single();
-          
-        setIsAdmin(data?.is_admin || false);
-      } else {
-        setIsAdmin(false);
-      }
     });
     return () => subscription.unsubscribe();
   }, []);
-
   const handleSignOut = async () => {
     try {
       const {
@@ -82,8 +52,7 @@ const Header = () => {
       console.error("Sign out error:", error);
     }
   };
-
-  const MobileNav = ({ isAdmin }) => <Sheet>
+  const MobileNav = () => <Sheet>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="md:hidden">
           <Menu className="h-5 w-5" />
@@ -152,7 +121,6 @@ const Header = () => {
         </div>
       </SheetContent>
     </Sheet>;
-
   return <header className="bg-white py-4 sm:px-6 border-b border-gray-200 px-0">
       <div className="container mx-auto">
         <div className="flex items-center justify-between">
@@ -199,22 +167,12 @@ const Header = () => {
                       </NavigationMenuLink>
                     </Link>
                   </NavigationMenuItem>
-                  {isAdmin && (
-                    <NavigationMenuItem>
-                      <Link to="/admin">
-                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                          <Settings className="h-4 w-4 mr-1" />
-                          Admin
-                        </NavigationMenuLink>
-                      </Link>
-                    </NavigationMenuItem>
-                  )}
                 </NavigationMenuList>
               </NavigationMenu>}
           </div>
           
           <div className="flex items-center space-x-2 sm:space-x-4">
-            {isMobile && <MobileNav isAdmin={isAdmin} />}
+            {isMobile && <MobileNav />}
             
             <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
               <Search className="mr-2 h-4 w-4" />
@@ -237,11 +195,6 @@ const Header = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="hidden md:block">
-                    {isAdmin && (
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin" className="w-full cursor-pointer">Admin Dashboard</Link>
-                      </DropdownMenuItem>
-                    )}
                     <DropdownMenuItem asChild>
                       <Link to="/profile" className="w-full cursor-pointer">Profile</Link>
                     </DropdownMenuItem>
