@@ -20,28 +20,13 @@ const Header = () => {
   const isMobile = useIsMobile();
 
   useEffect(() => {
-    // First set up auth listener to ensure we don't miss any events
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session?.user);
-      setUser(session?.user || null);
-      
-      // Check admin status on auth change
-      if (session?.user) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', session.user.id)
-          .single();
-          
-        setIsAdmin(data?.is_admin || false);
-      } else {
-        setIsAdmin(false);
-      }
-    });
-
-    // Then check current auth state
+    // Check current auth state
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: {
+          session
+        }
+      } = await supabase.auth.getSession();
       
       const currentUser = session?.user || null;
       setUser(currentUser);
@@ -59,12 +44,36 @@ const Header = () => {
     };
     checkUser();
 
+    // Listen for auth changes
+    const {
+      data: {
+        subscription
+      }
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state changed:", event, session?.user);
+      setUser(session?.user || null);
+      
+      // Check admin status on auth change
+      if (session?.user) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+          
+        setIsAdmin(data?.is_admin || false);
+      } else {
+        setIsAdmin(false);
+      }
+    });
     return () => subscription.unsubscribe();
   }, []);
 
   const handleSignOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      const {
+        error
+      } = await supabase.auth.signOut();
       if (error) throw error;
       toast.success("Signed out successfully");
       navigate('/');

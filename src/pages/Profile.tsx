@@ -12,7 +12,6 @@ import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import UserListings from '@/components/UserListings';
 import UserMessages from '@/components/UserMessages';
-import { Skeleton } from '@/components/ui/skeleton';
 
 const Profile = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -21,44 +20,19 @@ const Profile = () => {
 
   useEffect(() => {
     const getUser = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          toast.error('Please login to view your profile');
-          navigate('/login');
-          return;
-        }
-        
-        setUser(session.user);
-      } catch (error) {
-        console.error('Error fetching session:', error);
-        toast.error('Failed to load profile data');
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast.error('Please login to view your profile');
         navigate('/login');
-      } finally {
-        // Always set loading to false, even if there's an error
-        setLoading(false);
+        return;
       }
+      
+      setUser(session.user);
+      setLoading(false);
     };
 
     getUser();
-
-    // Set up auth state listener to handle session changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event === 'SIGNED_OUT') {
-          navigate('/login');
-        } else if (session) {
-          setUser(session.user);
-          setLoading(false);
-        }
-      }
-    );
-
-    // Cleanup subscription on component unmount
-    return () => {
-      subscription.unsubscribe();
-    };
   }, [navigate]);
 
   const handleChangePassword = async () => {
@@ -89,28 +63,7 @@ const Profile = () => {
       <div className="min-h-screen bg-racecar-lightgray">
         <Header />
         <div className="container mx-auto py-16 px-4">
-          <Card className="max-w-5xl mx-auto">
-            <CardHeader>
-              <Skeleton className="h-8 w-56 mb-2" />
-              <Skeleton className="h-4 w-72" />
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center space-x-6 mb-6">
-                <Skeleton className="w-20 h-20 rounded-full" />
-                <div className="space-y-2">
-                  <Skeleton className="h-5 w-40" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              </div>
-              <div className="space-y-6">
-                <Skeleton className="h-10 w-full max-w-md" />
-                <div className="space-y-4">
-                  <Skeleton className="h-24 w-full" />
-                  <Skeleton className="h-24 w-full" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <p>Loading profile...</p>
         </div>
         <Footer />
       </div>
