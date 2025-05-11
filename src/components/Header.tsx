@@ -12,13 +12,10 @@ import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from '@/components/ui/scroll-area';
-
 const Header = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-
   useEffect(() => {
     // Check current auth state
     const checkUser = async () => {
@@ -28,19 +25,6 @@ const Header = () => {
         }
       } = await supabase.auth.getSession();
       setUser(session?.user || null);
-      
-      if (session?.user) {
-        // Check if user is admin
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (!error && profile) {
-          setIsAdmin(profile.is_admin);
-        }
-      }
     };
     checkUser();
 
@@ -49,28 +33,12 @@ const Header = () => {
       data: {
         subscription
       }
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       console.log("Auth state changed:", event, session?.user);
       setUser(session?.user || null);
-      
-      if (session?.user) {
-        // Check if user is admin
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('is_admin')
-          .eq('id', session.user.id)
-          .single();
-          
-        if (!error && profile) {
-          setIsAdmin(profile.is_admin);
-        }
-      } else {
-        setIsAdmin(false);
-      }
     });
     return () => subscription.unsubscribe();
   }, []);
-
   const handleSignOut = async () => {
     try {
       const {
@@ -84,7 +52,6 @@ const Header = () => {
       console.error("Sign out error:", error);
     }
   };
-
   const MobileNav = () => <Sheet>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="md:hidden">
@@ -134,11 +101,6 @@ const Header = () => {
                     <Link to="/my-listings" className="px-2 py-2 hover:bg-gray-100 rounded-md">
                       My Listings
                     </Link>
-                    {isAdmin && (
-                      <Link to="/admin-dashboard" className="px-2 py-2 hover:bg-gray-100 rounded-md">
-                        Admin Dashboard
-                      </Link>
-                    )}
                     <Link to="/settings" className="px-2 py-2 hover:bg-gray-100 rounded-md">
                       Settings
                     </Link>
@@ -159,7 +121,6 @@ const Header = () => {
         </div>
       </SheetContent>
     </Sheet>;
-
   return <header className="bg-white py-4 sm:px-6 border-b border-gray-200 px-0">
       <div className="container mx-auto">
         <div className="flex items-center justify-between">
@@ -240,11 +201,6 @@ const Header = () => {
                     <DropdownMenuItem asChild>
                       <Link to="/my-listings" className="w-full cursor-pointer">My Listings</Link>
                     </DropdownMenuItem>
-                    {isAdmin && (
-                      <DropdownMenuItem asChild>
-                        <Link to="/admin-dashboard" className="w-full cursor-pointer">Admin Dashboard</Link>
-                      </DropdownMenuItem>
-                    )}
                     <DropdownMenuItem asChild>
                       <Link to="/settings" className="w-full cursor-pointer">Settings</Link>
                     </DropdownMenuItem>
