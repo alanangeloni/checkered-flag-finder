@@ -24,16 +24,12 @@ const CarDetailsContent = ({
   id,
   onContactClick
 }: CarDetailsContentProps) => {
-  if (!carListing) {
-    return <div>Loading car details...</div>;
-  }
-
   return (
     <>
       {/* Title and subtitle */}
       <div className="mb-4">
-        <h1 className="text-2xl md:text-3xl font-bold">{carListing?.name || "Car Details"}</h1>
-        <p className="text-gray-600">{carListing?.short_description || ""}</p>
+        <h1 className="text-2xl md:text-3xl font-bold">{carListing?.name}</h1>
+        <p className="text-gray-600">{carListing?.short_description}</p>
       </div>
       
       {/* Main content area */}
@@ -42,7 +38,7 @@ const CarDetailsContent = ({
         <div className="w-full mb-6">
           <CarImageGallery 
             images={images} 
-            carName={carListing?.name || 'Car'} 
+            carName={carListing?.name || ''} 
             isFeatured={carListing?.featured || false} 
           />
         </div>
@@ -54,8 +50,8 @@ const CarDetailsContent = ({
             {/* Price and Contact Info Component */}
             <CarPriceInfo 
               price={carListing?.price || 0}
-              raceCarType={carListing?.race_car_type || ""}
-              sellerType={carListing?.seller_type || ""}
+              raceCarType={carListing?.race_car_type}
+              sellerType={carListing?.seller_type}
               createdAt={carListing?.created_at || new Date().toISOString()}
               onContactClick={onContactClick}
             />
@@ -65,11 +61,11 @@ const CarDetailsContent = ({
             
             {/* Description Component */}
             <CarDescription 
-              detailedDescription={carListing?.detailed_description || ""}
-              shortDescription={carListing?.short_description || ""}
-              raceCarType={carListing?.race_car_type || ""}
-              categoryName={carListing?.category_name || ""}
-              subcategoryName={carListing?.subcategory_name || ""}
+              detailedDescription={carListing?.detailed_description}
+              shortDescription={carListing?.short_description}
+              raceCarType={carListing?.race_car_type}
+              categoryName={carListing?.category_name}
+              subcategoryName={carListing?.subcategory_name}
             />
 
             {/* Action Buttons */}

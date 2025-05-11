@@ -15,85 +15,25 @@ import UserMessages from '@/components/UserMessages';
 
 const Profile = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // First check if user is logged in
   useEffect(() => {
-    const getSession = async () => {
-      try {
-        setLoading(true);
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-          toast.error('Please login to view your profile');
-          navigate('/login');
-          return;
-        }
-        
-        setUser(session.user);
-        
-        // Fetch profile data
-        if (session.user) {
-          fetchProfileData(session.user.id);
-        } else {
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('Error checking session:', error);
-        setLoading(false);
-      }
-    };
-
-    getSession();
-  }, [navigate]);
-
-  // Set up auth state change listener separately
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed in Profile:', event, session?.user?.id);
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
+        toast.error('Please login to view your profile');
         navigate('/login');
         return;
       }
       
       setUser(session.user);
-      
-      // Make sure to fetch profile data when auth state changes
-      if (session.user && event === 'SIGNED_IN') {
-        fetchProfileData(session.user.id);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  // Separate function to fetch profile data
-  const fetchProfileData = async (userId: string) => {
-    try {
-      console.log('Fetching profile data for user:', userId);
-      
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .single();
-      
-      if (profileError) {
-        console.error('Error fetching profile:', profileError);
-        toast.error('Failed to load profile data');
-      } else {
-        console.log('Profile data fetched:', profileData);
-        setProfile(profileData);
-      }
-    } catch (error) {
-      console.error('Error in profile fetch:', error);
-    } finally {
       setLoading(false);
-    }
-  };
+    };
+
+    getUser();
+  }, [navigate]);
 
   const handleChangePassword = async () => {
     if (!user?.email) return;
@@ -143,17 +83,12 @@ const Profile = () => {
             <div className="flex items-center space-x-6 mb-6">
               <Avatar className="w-20 h-20">
                 <AvatarFallback className="text-2xl">
-                  {profile?.username ? profile.username.substring(0, 2).toUpperCase() : 
-                   user?.email ? user.email.substring(0, 2).toUpperCase() : 'U'}
+                  {user?.email ? user.email.substring(0, 2).toUpperCase() : 'U'}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h3 className="text-xl font-medium">
-                  {profile?.full_name || user?.email || 'User'}
-                </h3>
-                <p className="text-gray-500">
-                  Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}
-                </p>
+                <h3 className="text-xl font-medium">{user?.email}</h3>
+                <p className="text-gray-500">Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</p>
               </div>
             </div>
 
@@ -176,24 +111,6 @@ const Profile = () => {
                       <p className="text-sm font-medium text-gray-500">User ID</p>
                       <p className="text-sm">{user?.id}</p>
                     </div>
-                    {profile && (
-                      <>
-                        <div>
-                          <p className="text-sm font-medium text-gray-500">Username</p>
-                          <p>{profile.username || 'Not set'}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-500">Full Name</p>
-                          <p>{profile.full_name || 'Not set'}</p>
-                        </div>
-                        {profile.location && (
-                          <div>
-                            <p className="text-sm font-medium text-gray-500">Location</p>
-                            <p>{profile.location}</p>
-                          </div>
-                        )}
-                      </>
-                    )}
                   </div>
                 </div>
 

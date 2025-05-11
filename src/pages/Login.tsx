@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -23,18 +23,6 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // Check if the user is already logged in
-  useEffect(() => {
-    const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate('/');
-      }
-    };
-    
-    checkSession();
-  }, [navigate]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -50,13 +38,7 @@ const Login = () => {
       }
       
       toast.success('Login successful!');
-      
-      // Force trigger the auth state change for Header component
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log("Login successful, user:", user);
-      
-      // Navigate after login completes
-      navigate('/', { replace: true });
+      navigate('/');
     } catch (error: any) {
       toast.error(error.message || 'Login failed. Please check your credentials.');
       console.error(error);
