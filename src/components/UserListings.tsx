@@ -18,7 +18,14 @@ const UserListings = ({ userId }: UserListingsProps) => {
 
   useEffect(() => {
     const fetchUserListings = async () => {
+      if (!userId) {
+        console.error("No user ID provided to UserListings component");
+        setLoading(false);
+        return;
+      }
+
       try {
+        console.log("Fetching listings for user:", userId);
         const { data, error } = await supabase
           .from('car_listings')
           .select(`
@@ -27,8 +34,12 @@ const UserListings = ({ userId }: UserListingsProps) => {
           `)
           .eq('user_id', userId);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching user listings:', error);
+          throw error;
+        }
 
+        console.log("Fetched listings:", data);
         setListings(data as CarListingWithImages[] || []);
       } catch (error: any) {
         console.error('Error fetching user listings:', error);
@@ -40,6 +51,8 @@ const UserListings = ({ userId }: UserListingsProps) => {
 
     if (userId) {
       fetchUserListings();
+    } else {
+      setLoading(false);
     }
   }, [userId]);
 

@@ -24,6 +24,10 @@ const CarDetailsContent = ({
   id,
   onContactClick
 }: CarDetailsContentProps) => {
+  if (!carListing) {
+    return <div>Loading car details...</div>;
+  }
+
   return (
     <>
       {/* Title and subtitle */}
