@@ -45,8 +45,8 @@ const AdminUsers = () => {
   useEffect(() => {
     const results = users.filter(user =>
       (user.full_name && user.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (user.username && user.username.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (user.email && user.email.toLowerCase().includes(searchTerm.toLowerCase()))
+      (user.username && user.username.toLowerCase().includes(searchTerm.toLowerCase()))
+      // Note: removed email filter as it's not in the Profile type
     );
     setFilteredUsers(results);
   }, [searchTerm, users]);
@@ -107,7 +107,7 @@ const AdminUsers = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>
-                <TableHead>Email</TableHead>
+                <TableHead>Username</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Joined Date</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -142,7 +142,7 @@ const AdminUsers = () => {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{user.email || 'No email'}</TableCell>
+                    <TableCell>{user.username || 'No username'}</TableCell>
                     <TableCell>
                       {user.is_admin ? (
                         <div className="flex items-center">
