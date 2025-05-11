@@ -16,6 +16,15 @@ import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
 import Messages from "./pages/Messages";
 
+// Admin routes
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminDashboard from "./pages/admin/Dashboard";
+import AdminListings from "./pages/admin/Listings";
+import AdminUsers from "./pages/admin/Users";
+import AdminMessages from "./pages/admin/Messages";
+import AdminBlogManagement from "./pages/admin/BlogManagement";
+import BlogEditor from "./pages/admin/BlogEditor";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -35,6 +44,18 @@ const App = () => (
           <Route path="/signup" element={<Signup />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/messages/:id" element={<Messages />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="listings" element={<AdminListings />} />
+            <Route path="users" element={<AdminUsers />} />
+            <Route path="messages" element={<AdminMessages />} />
+            <Route path="blog" element={<AdminBlogManagement />} />
+            <Route path="blog/new" element={<BlogEditor />} />
+            <Route path="blog/edit/:id" element={<BlogEditor />} />
+          </Route>
+          
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
