@@ -19,9 +19,11 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
+  // First check if user is logged in
   useEffect(() => {
-    const getUser = async () => {
+    const getSession = async () => {
       try {
+        setLoading(true);
         const { data: { session } } = await supabase.auth.getSession();
         
         if (!session) {
@@ -32,44 +34,66 @@ const Profile = () => {
         
         setUser(session.user);
         
-        // Fetch the user's profile data
+        // Fetch profile data
         if (session.user) {
-          const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (profileError) {
-            console.error('Error fetching profile:', profileError);
-          } else {
-            setProfile(profileData);
-          }
+          fetchProfileData(session.user.id);
+        } else {
+          setLoading(false);
         }
-        
-        setLoading(false);
       } catch (error) {
-        console.error('Error checking authentication:', error);
-        toast.error('An error occurred while loading your profile');
+        console.error('Error checking session:', error);
         setLoading(false);
       }
     };
 
-    getUser();
+    getSession();
   }, [navigate]);
 
-  // Set up auth state change listener
+  // Set up auth state change listener separately
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed in Profile:', event, session?.user?.id);
+      
       if (!session) {
         navigate('/login');
-      } else {
-        setUser(session.user);
+        return;
+      }
+      
+      setUser(session.user);
+      
+      // Make sure to fetch profile data when auth state changes
+      if (session.user && event === 'SIGNED_IN') {
+        fetchProfileData(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  // Separate function to fetch profile data
+  const fetchProfileData = async (userId: string) => {
+    try {
+      console.log('Fetching profile data for user:', userId);
+      
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+      
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        toast.error('Failed to load profile data');
+      } else {
+        console.log('Profile data fetched:', profileData);
+        setProfile(profileData);
+      }
+    } catch (error) {
+      console.error('Error in profile fetch:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleChangePassword = async () => {
     if (!user?.email) return;

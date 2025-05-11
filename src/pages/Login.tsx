@@ -50,7 +50,13 @@ const Login = () => {
       }
       
       toast.success('Login successful!');
-      navigate('/');
+      
+      // Force trigger the auth state change for Header component
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log("Login successful, user:", user);
+      
+      // Navigate after login completes
+      navigate('/', { replace: true });
     } catch (error: any) {
       toast.error(error.message || 'Login failed. Please check your credentials.');
       console.error(error);
