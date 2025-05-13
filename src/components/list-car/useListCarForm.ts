@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -115,7 +114,7 @@ export const useListCarForm = () => {
       console.log("Creating car listing...");
       console.log("Values:", values);
 
-      // Prepare data for insertion, handling UUID validation
+      // Prepare data for insertion
       const carData: any = {
         name: values.name,
         make: values.make,
@@ -139,31 +138,20 @@ export const useListCarForm = () => {
         slug: carSlug
       };
       
-      // Only add category/subcategory if they're valid UUIDs
+      // Add category/subcategory only if they're valid
       if (values.categoryId && values.categoryId !== '' && values.categoryId !== '1') {
-        try {
-          // Validate if it's a proper UUID
-          const uuid = uuidv4(); // Just to access the UUID validation logic
-          if (typeof values.categoryId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(values.categoryId)) {
-            carData.category_id = values.categoryId;
-          } else {
-            console.log("Invalid category ID format, setting to null:", values.categoryId);
-          }
-        } catch (err) {
-          console.log("Error validating category ID, setting to null:", err);
+        if (typeof values.categoryId === 'string' && values.categoryId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          carData.category_id = values.categoryId;
+        } else {
+          console.log("Invalid category ID format, setting to null:", values.categoryId);
         }
       }
       
       if (values.subcategoryId && values.subcategoryId !== '') {
-        try {
-          // Validate if it's a proper UUID
-          if (typeof values.subcategoryId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(values.subcategoryId)) {
-            carData.subcategory_id = values.subcategoryId;
-          } else {
-            console.log("Invalid subcategory ID format, setting to null:", values.subcategoryId);
-          }
-        } catch (err) {
-          console.log("Error validating subcategory ID, setting to null:", err);
+        if (typeof values.subcategoryId === 'string' && values.subcategoryId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          carData.subcategory_id = values.subcategoryId;
+        } else {
+          console.log("Invalid subcategory ID format, setting to null:", values.subcategoryId);
         }
       }
 
@@ -191,35 +179,23 @@ export const useListCarForm = () => {
       const uploadedImages = [];
       const failedImages = [];
 
-      // Check if storage bucket exists and create it if it doesn't
-      const { data: buckets } = await supabase.storage.listBuckets();
-      console.log("Available buckets:", buckets);
+      // First verify bucket exists before attempting uploads
+      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+      if (bucketError) {
+        console.error("Error checking buckets:", bucketError);
+        throw new Error(`Failed to access storage buckets: ${bucketError.message}`);
+      }
       
       const carImagesBucketExists = buckets?.some(bucket => bucket.name === 'car-images');
+      console.log("Available buckets:", buckets);
       
       if (!carImagesBucketExists) {
-        try {
-          console.log('Attempting to create car-images storage bucket...');
-          const { data: newBucket, error: bucketError } = await supabase.storage.createBucket('car-images', {
-            public: true,
-            fileSizeLimit: 5242880, // 5MB in bytes
-            allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
-          });
-          
-          if (bucketError) {
-            console.error('Error creating bucket:', bucketError);
-            // Continue anyway, as the bucket might still work or already exist
-          } else {
-            console.log('Bucket created successfully:', newBucket);
-          }
-        } catch (bucketErr) {
-          console.error('Exception when creating bucket:', bucketErr);
-          // Continue anyway
-        }
+        console.error("car-images bucket doesn't exist!");
+        throw new Error("Image storage is not properly configured. Please contact support.");
       }
 
       if (imageFiles.length > 0) {
-        console.log(`Uploading ${imageFiles.length} images...`);
+        console.log(`Uploading ${imageFiles.length} images to bucket 'car-images'...`);
         
         for (let i = 0; i < imageFiles.length; i++) {
           const file = imageFiles[i];
@@ -228,14 +204,17 @@ export const useListCarForm = () => {
             // Generate unique filename
             const fileExt = file.name.split('.').pop();
             const fileName = `${uuidv4()}.${fileExt}`;
-            const filePath = `${userId}/${carListing.id}/${fileName}`;
+            const filePath = `${carListing.id}/${fileName}`;
             
             console.log(`Uploading image ${i + 1}/${imageFiles.length}: ${filePath}`);
             
             // Upload the file to storage
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('car-images')
-              .upload(filePath, file);
+              .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false
+              });
             
             if (uploadError) {
               console.error(`Error uploading image ${i}:`, uploadError);

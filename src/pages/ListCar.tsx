@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,8 @@ import SpecificationsSection from '@/components/list-car/SpecificationsSection';
 import DescriptionSection from '@/components/list-car/DescriptionSection';
 import ImageUploadSection from '@/components/list-car/ImageUploadSection';
 import useListCarForm from '@/components/list-car/useListCarForm';
-import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const ListCar = () => {
   const {
@@ -28,32 +28,51 @@ const ListCar = () => {
     onSubmit,
   } = useListCarForm();
   
-  // Check if the storage bucket exists on component load
+  // Initialize storage bucket on component mount
   useEffect(() => {
-    const checkBucket = async () => {
+    const initStorageBucket = async () => {
       try {
-        const { data: buckets, error } = await supabase.storage.listBuckets();
-        if (error) {
-          console.error("Error fetching buckets:", error);
+        // First check if the bucket exists
+        const { data: bucketList, error: bucketListError } = await supabase.storage.listBuckets();
+        if (bucketListError) {
+          console.error("Error fetching buckets:", bucketListError);
           return;
         }
-
-        const carImagesBucketExists = buckets?.some(bucket => bucket.name === 'car-images');
+        
+        const carImagesBucketExists = bucketList?.some(bucket => bucket.name === 'car-images');
         console.log("Car images bucket exists:", carImagesBucketExists);
         
+        // Only try to create the bucket if it doesn't exist
         if (!carImagesBucketExists) {
-          // Try to create the bucket
-          console.log("Attempting to create car-images bucket on page load...");
-          const { data, error: createError } = await supabase.storage.createBucket('car-images', {
-            public: true,
-            fileSizeLimit: 5242880,
-            allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
-          });
+          console.log("Attempting to create car-images bucket...");
           
-          if (createError) {
-            console.error("Error creating car-images bucket:", createError);
-          } else {
-            console.log("Car-images bucket created successfully:", data);
+          try {
+            // Check if the user has admin rights first
+            const { data: userData } = await supabase.auth.getUser();
+            if (!userData?.user) {
+              console.warn("User not authenticated, cannot create bucket");
+              toast.warning("You need to be logged in to upload images");
+              return;
+            }
+            
+            // Try to create the bucket
+            const { data, error: createError } = await supabase.storage.createBucket('car-images', {
+              public: true
+            });
+            
+            if (createError) {
+              console.error("Error creating car-images bucket:", createError);
+              if (createError.message.includes("row-level security policy")) {
+                toast.error("Permission denied: Only administrators can create storage buckets");
+              } else {
+                toast.error("Failed to create storage bucket. Please contact support.");
+              }
+            } else {
+              console.log("Car-images bucket created successfully:", data);
+              toast.success("Image storage configured successfully");
+            }
+          } catch (err) {
+            console.error("Exception when creating bucket:", err);
           }
         }
       } catch (err) {
@@ -61,7 +80,7 @@ const ListCar = () => {
       }
     };
     
-    checkBucket();
+    initStorageBucket();
   }, []);
 
   return (
