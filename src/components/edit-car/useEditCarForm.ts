@@ -109,23 +109,25 @@ export const useEditCarForm = (carId: string | undefined) => {
     if (index < existingImages.length) {
       // It's an existing image
       const updatedExistingImages = [...existingImages];
-      const removedImage = updatedExistingImages.splice(index, 1)[0];
+      updatedExistingImages.splice(index, 1);
       setExistingImages(updatedExistingImages);
       
-      // Mark image for deletion in database later
-      // This would need to be implemented in the onSubmit function
+      // Update the preview images
+      const newPreviewImages = [...previewImages];
+      newPreviewImages.splice(index, 1);
+      setPreviewImages(newPreviewImages);
     } else {
       // It's a new image
       const newImageIndex = index - existingImages.length;
       const newImageFiles = [...imageFiles];
       newImageFiles.splice(newImageIndex, 1);
       setImageFiles(newImageFiles);
+      
+      // Update preview images
+      const newPreviewImages = [...previewImages];
+      newPreviewImages.splice(index, 1);
+      setPreviewImages(newPreviewImages);
     }
-
-    // Update preview images
-    const newPreviewImages = [...previewImages];
-    newPreviewImages.splice(index, 1);
-    setPreviewImages(newPreviewImages);
   };
 
   const handleDragEnd = (result: any) => {
@@ -136,9 +138,6 @@ export const useEditCarForm = (carId: string | undefined) => {
     items.splice(result.destination.index, 0, reorderedItem);
     
     setPreviewImages(items);
-    
-    // Update existing and new images accordingly
-    // This is more complex and would need detailed implementation
   };
 
   const onSubmit = async (values: ListCarFormValues) => {
@@ -200,6 +199,23 @@ export const useEditCarForm = (carId: string | undefined) => {
 
       if (updateError) throw updateError;
 
+      // Handle deleted existing images (if any)
+      const imagesToDelete = carData.images.filter((img: any) => !existingImages.some(existing => existing.id === img.id));
+      
+      for (const img of imagesToDelete) {
+        // Delete from car_images table
+        const { error: deleteImageError } = await supabase
+          .from('car_images')
+          .delete()
+          .eq('id', img.id);
+          
+        if (deleteImageError) {
+          console.error('Error deleting image record:', deleteImageError);
+        }
+        
+        // Could also delete the file from storage here if needed
+      }
+
       // Handle any new image uploads
       if (imageFiles.length > 0 && updatedCar) {
         for (let i = 0; i < imageFiles.length; i++) {
@@ -207,8 +223,6 @@ export const useEditCarForm = (carId: string | undefined) => {
           const fileExt = file.name.split('.').pop();
           const fileName = `${uuidv4()}.${fileExt}`;
           const filePath = `${session.user.id}/${updatedCar.id}/${fileName}`;
-          
-          console.log('Uploading image to:', filePath);
           
           // Upload the file to storage
           const { error: uploadError } = await supabase.storage

@@ -105,7 +105,7 @@ const EditListing = () => {
                   type="button"
                   variant="outline"
                   className="w-full sm:w-auto"
-                  onClick={() => navigate(`/car-details/${id}/${carData?.slug || ''}`)}
+                  onClick={() => navigate(`/car-details/${id}`)}
                 >
                   Cancel
                 </Button>
