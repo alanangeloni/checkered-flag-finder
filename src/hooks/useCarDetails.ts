@@ -62,13 +62,37 @@ export const useCarDetails = (idOrSlug?: string) => {
             }
             
             setCarListing(carBySlug);
-            setImages(carBySlug?.images || []);
+            
+            // Process images to ensure we have the correct format
+            const processedImages = carBySlug?.images?.map((img: any) => {
+              // If image is already a string URL, return it as is
+              if (typeof img === 'string') return img;
+              // Otherwise extract the image_url property
+              return img.image_url;
+            }) || [];
+            
+            console.log('Car images from DB (slug):', carBySlug?.images);
+            console.log('Processed images (slug):', processedImages);
+            
+            setImages(processedImages);
           } else {
             throw carError;
           }
         } else {
           setCarListing(car);
-          setImages(car?.images || []);
+          
+          // Process images to ensure we have the correct format
+          const processedImages = car?.images?.map((img: any) => {
+            // If image is already a string URL, return it as is
+            if (typeof img === 'string') return img;
+            // Otherwise extract the image_url property
+            return img.image_url;
+          }) || [];
+          
+          console.log('Car images from DB:', car?.images);
+          console.log('Processed images:', processedImages);
+          
+          setImages(processedImages);
         }
 
         // Fetch related listings

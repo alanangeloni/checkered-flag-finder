@@ -20,8 +20,13 @@ const CarImageGallery = ({ images, carName, isFeatured = false }: CarImageGaller
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   
-  // Ensure we have a non-empty array of images
-  const validImages = images && images.length > 0 ? images : ['https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5'];
+  // Ensure we have a non-empty array of images and extract image URLs properly
+  const validImages = images && images.length > 0 
+    ? images.map((img: any) => typeof img === 'string' ? img : img.image_url)
+    : ['https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5'];
+  
+  console.log('Images received:', images);
+  console.log('Processed image URLs:', validImages);
   
   const nextImage = () => {
     if (validImages.length <= 1) return;

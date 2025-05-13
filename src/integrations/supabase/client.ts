@@ -12,21 +12,34 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Create a singleton instance of the Supabase client
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
-// Initialize storage bucket if it doesn't exist
+// Check if the required storage bucket exists and ensure proper access
 (async () => {
   try {
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const carImagesBucketExists = buckets?.some(bucket => bucket.name === 'car-images');
+    console.log('Checking storage buckets...');
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    
+    if (bucketsError) {
+      console.error('Error listing buckets:', bucketsError);
+      return;
+    }
+    
+    console.log('Available buckets:', buckets?.map(b => b.name));
+    const carImagesBucketExists = buckets?.some(bucket => bucket.name === 'car_images');
     
     if (!carImagesBucketExists) {
-      console.log('Creating car-images storage bucket...');
-      await supabase.storage.createBucket('car-images', {
-        public: true,
-        fileSizeLimit: 5242880, // 5MB in bytes
-        allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
-      });
+      console.warn('Warning: car_images bucket does not exist. Please create it in the Supabase dashboard.');
+    } else {
+      console.log('car_images bucket exists');
+      
+      // Test bucket access by listing contents
+      const { data: files, error: listError } = await supabase.storage.from('car_images').list();
+      if (listError) {
+        console.error('Error accessing car_images bucket:', listError);
+      } else {
+        console.log(`Successfully accessed car_images bucket. Contains ${files.length} files.`);
+      }
     }
   } catch (error) {
-    console.error('Error checking/creating storage bucket:', error);
+    console.error('Error checking storage buckets:', error);
   }
 })();

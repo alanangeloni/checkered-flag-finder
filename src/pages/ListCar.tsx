@@ -28,59 +28,25 @@ const ListCar = () => {
     onSubmit,
   } = useListCarForm();
   
-  // Initialize storage bucket on component mount
+  // Check if the user is authenticated on component mount
   useEffect(() => {
-    const initStorageBucket = async () => {
+    const checkUserAuth = async () => {
       try {
-        // First check if the bucket exists
-        const { data: bucketList, error: bucketListError } = await supabase.storage.listBuckets();
-        if (bucketListError) {
-          console.error("Error fetching buckets:", bucketListError);
+        // Check if the user is authenticated
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData?.user) {
+          console.warn("User not authenticated");
+          toast.warning("You need to be logged in to upload images");
           return;
         }
         
-        const carImagesBucketExists = bucketList?.some(bucket => bucket.name === 'car-images');
-        console.log("Car images bucket exists:", carImagesBucketExists);
-        
-        // Only try to create the bucket if it doesn't exist
-        if (!carImagesBucketExists) {
-          console.log("Attempting to create car-images bucket...");
-          
-          try {
-            // Check if the user has admin rights first
-            const { data: userData } = await supabase.auth.getUser();
-            if (!userData?.user) {
-              console.warn("User not authenticated, cannot create bucket");
-              toast.warning("You need to be logged in to upload images");
-              return;
-            }
-            
-            // Try to create the bucket
-            const { data, error: createError } = await supabase.storage.createBucket('car-images', {
-              public: true
-            });
-            
-            if (createError) {
-              console.error("Error creating car-images bucket:", createError);
-              if (createError.message.includes("row-level security policy")) {
-                toast.error("Permission denied: Only administrators can create storage buckets");
-              } else {
-                toast.error("Failed to create storage bucket. Please contact support.");
-              }
-            } else {
-              console.log("Car-images bucket created successfully:", data);
-              toast.success("Image storage configured successfully");
-            }
-          } catch (err) {
-            console.error("Exception when creating bucket:", err);
-          }
-        }
+        console.log("User authenticated:", userData.user.id);
       } catch (err) {
-        console.error("Exception checking/creating bucket:", err);
+        console.error("Exception checking user auth:", err);
       }
     };
     
-    initStorageBucket();
+    checkUserAuth();
   }, []);
 
   return (
@@ -113,14 +79,40 @@ const ListCar = () => {
                 onDragEnd={handleDragEnd}
               />
 
-              <Button 
-                type="submit" 
-                variant="primary" 
-                className="w-full md:w-auto"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Submitting...' : 'Submit Listing'}
-              </Button>
+              <div className="flex flex-col md:flex-row gap-4">
+                <Button 
+                  type="submit" 
+                  variant="primary" 
+                  className="w-full md:w-auto"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit Listing'}
+                </Button>
+                
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full md:w-auto"
+                  onClick={async () => {
+                    try {
+                      // Test if we can list the bucket contents
+                      const { data, error } = await supabase.storage.from('car_images').list();
+                      if (error) {
+                        console.error('Error listing bucket contents:', error);
+                        toast.error(`Storage access error: ${error.message}`);
+                      } else {
+                        console.log('Bucket contents:', data);
+                        toast.success(`Successfully accessed car_images bucket. Found ${data.length} items.`);
+                      }
+                    } catch (err: any) {
+                      console.error('Exception testing bucket access:', err);
+                      toast.error(`Exception: ${err.message}`);
+                    }
+                  }}
+                >
+                  Test Storage Access
+                </Button>
+              </div>
             </form>
           </Form>
         </Card>

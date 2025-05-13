@@ -179,87 +179,90 @@ export const useListCarForm = () => {
       const uploadedImages = [];
       const failedImages = [];
 
-      // First verify bucket exists before attempting uploads
-      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-      if (bucketError) {
-        console.error("Error checking buckets:", bucketError);
-        throw new Error(`Failed to access storage buckets: ${bucketError.message}`);
-      }
+      // Skip bucket existence check and proceed with uploads
+      console.log("Proceeding with image uploads to car_images bucket...");
       
-      const carImagesBucketExists = buckets?.some(bucket => bucket.name === 'car-images');
-      console.log("Available buckets:", buckets);
-      
-      if (!carImagesBucketExists) {
-        console.error("car-images bucket doesn't exist!");
-        throw new Error("Image storage is not properly configured. Please contact support.");
+      // Debug: List available buckets anyway (for logging purposes)
+      try {
+        const { data: buckets } = await supabase.storage.listBuckets();
+        console.log("Available buckets (for debugging):", buckets?.map(b => b.name));
+      } catch (err) {
+        console.log("Could not list buckets for debugging:", err);
       }
 
       if (imageFiles.length > 0) {
-        console.log(`Uploading ${imageFiles.length} images to bucket 'car-images'...`);
+        console.log(`Uploading ${imageFiles.length} images to bucket 'car_images'...`);
         
-        for (let i = 0; i < imageFiles.length; i++) {
-          const file = imageFiles[i];
-          
-          try {
-            // Generate unique filename
-            const fileExt = file.name.split('.').pop();
-            const fileName = `${uuidv4()}.${fileExt}`;
-            const filePath = `${carListing.id}/${fileName}`;
+        // Wrap the entire upload process in a try-catch to catch any unexpected errors
+        try {
+          for (let i = 0; i < imageFiles.length; i++) {
+            const file = imageFiles[i];
             
-            console.log(`Uploading image ${i + 1}/${imageFiles.length}: ${filePath}`);
-            
-            // Upload the file to storage
-            const { data: uploadData, error: uploadError } = await supabase.storage
-              .from('car-images')
-              .upload(filePath, file, {
-                cacheControl: '3600',
-                upsert: false
-              });
-            
-            if (uploadError) {
-              console.error(`Error uploading image ${i}:`, uploadError);
-              failedImages.push({ file: file.name, error: uploadError.message });
-              continue;
+            try {
+              // Generate unique filename
+              const fileExt = file.name.split('.').pop();
+              const fileName = `${uuidv4()}.${fileExt}`;
+              const filePath = `${carListing.id}/${fileName}`;
+              
+              console.log(`Uploading image ${i + 1}/${imageFiles.length}: ${filePath}`);
+              
+              // Upload the file to storage
+              console.log(`Attempting to upload ${filePath} to car_images bucket...`);
+              const { data: uploadData, error: uploadError } = await supabase.storage
+                .from('car_images')
+                .upload(filePath, file, {
+                  cacheControl: '3600',
+                  upsert: true // Changed to true to allow overwriting if needed
+                });
+              
+              if (uploadError) {
+                console.error(`Error uploading image ${i}:`, uploadError);
+                failedImages.push({ file: file.name, error: uploadError.message });
+                continue;
+              }
+              
+              console.log(`Upload successful for image ${i + 1}:`, uploadData);
+              
+              // Get the public URL
+              const { data: publicURLData } = supabase.storage
+                .from('car_images')
+                .getPublicUrl(filePath);
+              
+              if (!publicURLData || !publicURLData.publicUrl) {
+                console.error(`Failed to get public URL for image ${i}`);
+                failedImages.push({ file: file.name, error: 'Failed to get public URL' });
+                continue;
+              }
+              
+              console.log(`Image ${i + 1} uploaded, URL:`, publicURLData.publicUrl);
+              
+              // Add image record to car_images table with is_primary true for first image only
+              const isPrimary = i === 0;
+              const { data: imageRecord, error: imageRecordError } = await supabase
+                .from('car_images')
+                .insert({
+                  car_id: carListing.id,
+                  image_url: publicURLData.publicUrl,
+                  is_primary: isPrimary
+                })
+                .select()
+                .single();
+              
+              if (imageRecordError) {
+                console.error(`Error creating image record ${i}:`, imageRecordError);
+                failedImages.push({ file: file.name, error: imageRecordError.message });
+              } else if (imageRecord) {
+                uploadedImages.push(imageRecord);
+                console.log(`Image record created for image ${i + 1}:`, imageRecord);
+              }
+            } catch (err: any) {
+              console.error(`Unexpected error with image ${i}:`, err);
+              failedImages.push({ file: `Image ${i + 1}`, error: err.message || 'Unknown error' });
             }
-            
-            console.log(`Upload successful for image ${i + 1}:`, uploadData);
-            
-            // Get the public URL
-            const { data: publicURLData } = supabase.storage
-              .from('car-images')
-              .getPublicUrl(filePath);
-            
-            if (!publicURLData || !publicURLData.publicUrl) {
-              console.error(`Failed to get public URL for image ${i}`);
-              failedImages.push({ file: file.name, error: 'Failed to get public URL' });
-              continue;
-            }
-            
-            console.log(`Image ${i + 1} uploaded, URL:`, publicURLData.publicUrl);
-            
-            // Add image record to car_images table with is_primary true for first image only
-            const isPrimary = i === 0;
-            const { data: imageRecord, error: imageRecordError } = await supabase
-              .from('car_images')
-              .insert({
-                car_id: carListing.id,
-                image_url: publicURLData.publicUrl,
-                is_primary: isPrimary
-              })
-              .select()
-              .single();
-            
-            if (imageRecordError) {
-              console.error(`Error creating image record ${i}:`, imageRecordError);
-              failedImages.push({ file: file.name, error: imageRecordError.message });
-            } else if (imageRecord) {
-              uploadedImages.push(imageRecord);
-              console.log(`Image record created for image ${i + 1}:`, imageRecord);
-            }
-          } catch (err: any) {
-            console.error(`Unexpected error with image ${i}:`, err);
-            failedImages.push({ file: `Image ${i + 1}`, error: err.message || 'Unknown error' });
           }
+        } catch (outerErr: any) {
+          console.error('Unexpected error during image upload process:', outerErr);
+          throw new Error(`Image upload process failed: ${outerErr.message || 'Unknown error'}`);
         }
       }
 
@@ -314,33 +317,46 @@ export const useListCarForm = () => {
       setIsSubmitting(true);
       console.log("Starting submission...");
       console.log("Form values:", values);
+      console.log("Image files:", imageFiles.length, "preview images:", previewImages.length);
 
       // Check if the user is logged in
+      console.log("Checking user session...");
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
+        console.error("No active session found");
         toast.error('You must be logged in to list a car');
         navigate('/login');
         return;
       }
+      console.log("User authenticated:", session.user.id);
 
       // Use the extraction function to create listing and upload images
+      console.log("Calling createCarListingWithImages...");
       const result = await createCarListingWithImages(values, session.user.id);
+      console.log("Result from createCarListingWithImages:", result);
       
       if (result.success) {
         const successMessage = result.failedImages.length > 0
           ? `Car listing created with ${result.uploadedImages.length} images`
           : 'Car listing created successfully!';
           
+        console.log("Success message:", successMessage);
         toast.success(successMessage);
         
         // Navigate to the car details page
         const slug = result.carListing.slug || result.carListing.id;
+        console.log("Navigating to car details page:", slug);
         navigate(`/car-details/${slug}`);
+      } else {
+        console.error("Result indicated failure but no error was thrown");
+        toast.error("Failed to create listing");
       }
     } catch (err: any) {
       console.error('Error creating listing:', err);
+      console.error('Error stack:', err.stack);
       toast.error(err.message || 'Failed to create listing');
     } finally {
+      console.log("Setting isSubmitting to false");
       setIsSubmitting(false);
     }
   };

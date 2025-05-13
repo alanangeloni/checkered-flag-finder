@@ -19,6 +19,8 @@ export const useEditCarForm = (carId: string | undefined) => {
   
   const form = useForm<ListCarFormValues>({
     resolver: zodResolver(formSchema),
+    mode: 'onSubmit', // Only validate on submit
+    reValidateMode: 'onSubmit',
   });
 
   // Fetch car data
@@ -213,12 +215,18 @@ export const useEditCarForm = (carId: string | undefined) => {
   };
 
   const onSubmit = async (values: ListCarFormValues) => {
+    console.log('Form submitted with values:', values);
     try {
       setIsSubmitting(true);
       console.log("Starting submission for edit...");
 
       // Check if the user is logged in
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession();
+      const session = data.session;
+      
+      console.log('Session check result:', session ? 'User is logged in' : 'No active session');
+      console.log('Image files to upload:', imageFiles.length);
+      
       if (!session) {
         toast.error('You must be logged in to update a listing');
         navigate('/login');
@@ -251,6 +259,8 @@ export const useEditCarForm = (carId: string | undefined) => {
       console.log("Updating car listing...");
 
       // Update the car listing
+      console.log('Updating car listing with ID:', carId);
+      
       const { data: updatedCar, error: updateError } = await supabase
         .from('car_listings')
         .update({
@@ -289,9 +299,11 @@ export const useEditCarForm = (carId: string | undefined) => {
       console.log("Car listing updated successfully:", updatedCar);
 
       // Handle deleted existing images (if any)
-      const imagesToDelete = carData.images.filter((img: any) => 
+      const imagesToDelete = carData.images ? carData.images.filter((img: any) => 
         !existingImages.some(existing => existing.id === img.id)
-      );
+      ) : [];
+      
+      console.log('Images to delete:', imagesToDelete);
       
       if (imagesToDelete.length > 0) {
         console.log(`Deleting ${imagesToDelete.length} images...`);
@@ -313,6 +325,8 @@ export const useEditCarForm = (carId: string | undefined) => {
 
       // Handle any new image uploads
       if (imageFiles.length > 0 && updatedCar) {
+        console.log('Car ID for image uploads:', updatedCar.id);
+        console.log('User ID for image uploads:', session.user.id);
         console.log(`Uploading ${imageFiles.length} new images...`);
         
         // Upload each image sequentially
@@ -327,9 +341,15 @@ export const useEditCarForm = (carId: string | undefined) => {
             console.log(`Uploading image ${i + 1}/${imageFiles.length}: ${filePath}`);
             
             // Upload the file to storage
-            const { error: uploadError } = await supabase.storage
-              .from('car-images')
-              .upload(filePath, file);
+            console.log(`Attempting to upload ${filePath} to car_images bucket...`);
+            const { data: uploadData, error: uploadError } = await supabase.storage
+              .from('car_images')
+              .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: true // Allow overwriting if needed
+              });
+              
+            console.log('Upload result:', uploadError ? 'Error' : 'Success', uploadData);
             
             if (uploadError) {
               console.error(`Error uploading image ${i}:`, uploadError);
@@ -339,7 +359,7 @@ export const useEditCarForm = (carId: string | undefined) => {
             
             // Get the public URL
             const { data: publicURLData } = supabase.storage
-              .from('car-images')
+              .from('car_images')
               .getPublicUrl(filePath);
             
             if (!publicURLData || !publicURLData.publicUrl) {
@@ -352,13 +372,15 @@ export const useEditCarForm = (carId: string | undefined) => {
             // Add image record to car_images table
             const isPrimary = existingImages.length === 0 && i === 0; // First image is primary if no existing images
             
-            const { error: imageRecordError } = await supabase
+            const { data: imageRecord, error: imageRecordError } = await supabase
               .from('car_images')
               .insert({
                 car_id: updatedCar.id,
                 image_url: publicURLData.publicUrl,
                 is_primary: isPrimary
-              });
+              })
+              .select()
+              .single();
             
             if (imageRecordError) {
               console.error(`Error creating image record ${i}:`, imageRecordError);
@@ -368,6 +390,22 @@ export const useEditCarForm = (carId: string | undefined) => {
             console.error(`Unexpected error with image ${i}:`, err);
           }
         }
+      }
+      
+      // Step 3: Fetch the complete car listing with images to confirm update
+      const { data: completeCarListing, error: fetchError } = await supabase
+        .from('car_listings')
+        .select(`
+          *,
+          images:car_images(*)
+        `)
+        .eq('id', updatedCar.id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching complete car listing:', fetchError);
+      } else {
+        console.log('Updated car listing with images:', completeCarListing);
       }
       
       toast.success('Car listing updated successfully!');
