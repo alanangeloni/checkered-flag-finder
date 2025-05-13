@@ -43,6 +43,8 @@ interface CarListing {
   status: string;
   category_id?: string;
   subcategory_id?: string;
+  category_name?: string;
+  subcategory_name?: string;
   slug?: string;
   created_at: string;
   primary_image?: string;
@@ -105,7 +107,10 @@ const Listings = () => {
             .select('*')
             .order('name');
           
-          if (error) throw error;
+          if (error) {
+            console.error('Error fetching categories:', error);
+            return [];
+          }
           return data || [];
         }, 'Categories Fetch');
         
@@ -118,14 +123,17 @@ const Listings = () => {
         }))];
         setCategories(allCategories);
         
-        // Fetch all subcategories with retry mechanism
+        // Fetch subcategories for each category
         const subcategoriesData = await retryOperation<any[]>(async () => {
           const { data, error } = await supabase
             .from('subcategories')
             .select('*')
             .order('name');
           
-          if (error) throw error;
+          if (error) {
+            console.error('Error fetching subcategories:', error);
+            return [];
+          }
           return data || [];
         }, 'Subcategories Fetch');
         
@@ -163,45 +171,47 @@ const Listings = () => {
         
         console.log('Fetching car listings...');
         
-        // Fetch car listings directly without joins first to ensure we get basic data
-        const { data: basicListings, error: basicError } = await supabase
-          .from('car_listings')
-          .select('*')
-          .order('created_at', { ascending: false });
-        
-        if (basicError) {
-          console.error('Error fetching basic car listings:', basicError);
-          throw basicError;
-        }
-        
-        console.log('Successfully fetched basic car listings:', basicListings?.length || 0);
-        
-        // Fetch all car listings with images - with retry mechanism and no auth requirement
-        const rawListingsData = await retryOperation<any[]>(async () => {
-          // Explicitly set auth to null to ensure public access
+        // Fetch car listings with all required data
+        let rawListingsData = [];
+        try {
+          console.log('Fetching listings...');
           const { data, error } = await supabase
             .from('car_listings')
             .select(`
               *,
-              images:car_images(*)
+              car_images (id, image_url, is_primary),
+              category:categories (name),
+              subcategory:subcategories (name)
             `)
-            // Remove status filter to show all listings to everyone
-            // .eq('status', 'active')
             .order('created_at', { ascending: false });
           
-          if (error) throw error;
-          return data || [];
-        }, 'Listings Fetch');
+          if (error) {
+            console.error('Error fetching listings:', error);
+            throw error;
+          }
+          
+          if (data && data.length > 0) {
+            console.log('Successfully fetched listings:', data.length);
+            rawListingsData = data;
+          } else {
+            console.warn('No listings found');
+          }
+        } catch (fetchError) {
+          console.error('Critical error fetching listings:', fetchError);
+          toast.error('Error loading listings. Please refresh the page.');
+        }
         
         console.log('Listings fetched successfully:', rawListingsData.length);
         
         // Process the listings data to match our CarListing interface
         const processedListings: CarListing[] = rawListingsData.map(listing => {
-          // Find primary image or use the first one
-          const primaryImage = listing.images && listing.images.length > 0
-            ? listing.images.find((img: any) => img.is_primary)?.image_url || listing.images[0].image_url
-            : undefined;
-            
+          // Get primary image from the car_images array
+          const primaryImage = listing.car_images?.find(img => img.is_primary)?.image_url;
+          
+          // Get category and subcategory names from the joined data
+          const categoryName = listing.category?.name || '';
+          const subcategoryName = listing.subcategory?.name || '';
+          
           return {
             id: listing.id,
             name: listing.name || 'Unnamed Listing',
@@ -211,13 +221,15 @@ const Listings = () => {
             price: Number(listing.price) || 0,
             location: listing.location,
             short_description: listing.short_description,
-            status: listing.status || 'inactive',
+            status: listing.status || 'active',
             category_id: listing.category_id,
             subcategory_id: listing.subcategory_id,
-            slug: listing.slug,
+            category_name: categoryName,
+            subcategory_name: subcategoryName,
+            slug: listing.slug || listing.id,
             created_at: listing.created_at,
-            primary_image: primaryImage,
-            images: listing.images
+            primary_image: primaryImage || listing.primary_image || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80',
+            mileage: listing.mileage
           };
         });
         
@@ -274,8 +286,9 @@ const Listings = () => {
     // Filter by category
     const categoryMatch = selectedCategory === 'all' || car.category_id === selectedCategory;
     
-    // Filter by subcategory
-    const subcategoryMatch = selectedSubcategory === 'all' || car.subcategory_id === selectedSubcategory;
+    // Filter by subcategory - only apply if a category is selected
+    const subcategoryMatch = selectedSubcategory === 'all' || 
+      (selectedCategory !== 'all' && car.subcategory_id === selectedSubcategory);
     
     return statusMatch && searchMatch && priceMatch && categoryMatch && subcategoryMatch;
   });
@@ -297,14 +310,17 @@ const Listings = () => {
 
   // Handle category change
   const handleCategoryChange = (categoryId: string) => {
+    console.log('Category changed to:', categoryId);
     setSelectedCategory(categoryId);
-    setSelectedSubcategory("all");
+    setSelectedSubcategory('all');
     
-    // Update available subcategories based on the selected category
-    if (subcategories[categoryId]) {
-      setAvailableSubcategories(subcategories[categoryId]);
-    } else {
+    // Update available subcategories based on selected category
+    if (categoryId === 'all') {
       setAvailableSubcategories(subcategories.all || []);
+    } else {
+      const categorySubcategories = subcategories[categoryId] || [];
+      console.log('Available subcategories for category', categoryId, ':', categorySubcategories);
+      setAvailableSubcategories(categorySubcategories);
     }
   };
   
@@ -455,7 +471,7 @@ const Listings = () => {
                   if (!car || !car.id) return null;
                   
                   // Handle missing images gracefully
-                  const fallbackImage = 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5';
+                  const fallbackImage = 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80';
                   const imageUrl = car.primary_image || fallbackImage;
                   
                   return (
@@ -479,6 +495,18 @@ const Listings = () => {
                           <h3 className="text-lg font-bold">{car.name}</h3>
                           <div className="text-xs text-gray-600 mt-1">
                             {[car.make, car.model, car.year].filter(Boolean).join(' • ') || 'Details not available'}
+                          </div>
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {car.category_name && (
+                              <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                {car.category_name}
+                              </span>
+                            )}
+                            {car.subcategory_name && (
+                              <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                {car.subcategory_name}
+                              </span>
+                            )}
                           </div>
                           <div className="text-xs text-gray-600 mt-2">
                             {car.location || 'Location not specified'}
