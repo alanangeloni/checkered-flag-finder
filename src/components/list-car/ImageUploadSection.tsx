@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
+import { UploadCloud, ArrowUp, ArrowDown, X } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 
 interface ImageUploadSectionProps {
   previewImages: string[];
@@ -18,7 +19,9 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
   onRemoveImage,
   onDragEnd
 }) => {
-  // Simple reordering functions until react-beautiful-dnd is properly installed
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Simple reordering functions
   const moveImageUp = (index: number) => {
     if (index <= 0) return;
     const result = {
@@ -37,17 +40,23 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
     onDragEnd(result);
   };
 
+  const handleSelectFilesClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Images</h2>
-      <Label htmlFor="images">Car Images</Label>
-      <div className="mt-2 border-2 border-dashed border-gray-300 rounded-md p-6 text-center">
+      <Card className="p-6 border-2 border-dashed">
         <div className="flex flex-col items-center">
-          <UploadCloud className="h-10 w-10 text-gray-400 mb-2" />
-          <p className="text-sm text-gray-600">Upload images of your car</p>
-          <p className="text-xs text-gray-500 mb-3">PNG, JPG, GIF up to 5MB each</p>
+          <UploadCloud className="h-16 w-16 text-gray-400 mb-2" />
+          <p className="text-lg font-medium text-gray-700">Upload images of your car</p>
+          <p className="text-sm text-gray-500 mb-5">PNG, JPG, GIF up to 5MB each</p>
           <Input 
-            id="images" 
+            id="images"
+            ref={fileInputRef}
             type="file" 
             accept="image/*" 
             multiple
@@ -56,57 +65,65 @@ export const ImageUploadSection: React.FC<ImageUploadSectionProps> = ({
           />
           <Button 
             type="button" 
-            variant="outline"
-            onClick={() => document.getElementById('images')?.click()}
+            variant="default"
+            size="lg"
+            className="px-8"
+            onClick={handleSelectFilesClick}
           >
             Select Files
           </Button>
         </div>
-      </div>
+      </Card>
 
       {previewImages.length > 0 && (
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {previewImages.map((src, index) => (
-            <div key={`image-${index}`} className="relative group">
-              <div className="absolute top-1 left-1 bg-black/50 p-1 rounded-full text-white z-10 flex gap-1">
+        <div className="mt-8">
+          <h3 className="text-md font-medium mb-3">Selected Images</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {previewImages.map((src, index) => (
+              <div key={`image-${index}`} className="relative group border rounded-md overflow-hidden">
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all z-0"></div>
+                <img 
+                  src={src} 
+                  alt={`Car preview ${index + 1}`}
+                  className="w-full h-32 object-cover"
+                />
+                <div className="absolute top-2 left-2 flex space-x-1">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    className="h-6 w-6 bg-white/80 hover:bg-white"
+                    onClick={() => moveImageUp(index)}
+                    disabled={index === 0}
+                  >
+                    <ArrowUp size={14} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="icon"
+                    className="h-6 w-6 bg-white/80 hover:bg-white"
+                    onClick={() => moveImageDown(index)}
+                    disabled={index === previewImages.length - 1}
+                  >
+                    <ArrowDown size={14} />
+                  </Button>
+                </div>
                 <Button
                   type="button"
-                  variant="ghost"
+                  variant="destructive"
                   size="icon"
-                  className="h-5 w-5 p-0 text-white hover:text-white hover:bg-black/30"
-                  onClick={() => moveImageUp(index)}
-                  disabled={index === 0}
+                  className="absolute top-2 right-2 h-6 w-6"
+                  onClick={() => onRemoveImage(index)}
                 >
-                  <ArrowUp size={12} />
+                  <X size={14} />
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-5 w-5 p-0 text-white hover:text-white hover:bg-black/30"
-                  onClick={() => moveImageDown(index)}
-                  disabled={index === previewImages.length - 1}
-                >
-                  <ArrowDown size={12} />
-                </Button>
-                <GripVertical size={14} className="cursor-move" />
+                <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-center text-xs py-1">
+                  {index === 0 ? 'Primary Image' : `Image ${index + 1}`}
+                </div>
               </div>
-              <img 
-                src={src} 
-                alt={`Car preview ${index + 1}`}
-                className="w-full h-24 object-cover rounded-md"
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                size="icon"
-                className="absolute top-1 right-1 h-5 w-5"
-                onClick={() => onRemoveImage(index)}
-              >
-                ×
-              </Button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>

@@ -28,50 +28,86 @@ export const useListCarForm = () => {
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
+    
+    // Validate files (size, type, etc.)
+    const validFiles = Array.from(files).filter(file => {
+      // Check file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`${file.name} is too large. Maximum size is 5MB.`);
+        return false;
+      }
+      
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast.error(`${file.name} is not an image.`);
+        return false;
+      }
+      
+      return true;
+    });
+    
+    if (validFiles.length === 0) return;
     
     // Store the files for later upload
-    const newFiles = Array.from(files);
-    setImageFiles([...imageFiles, ...newFiles]);
+    setImageFiles(prev => [...prev, ...validFiles]);
     
     // Create preview URLs
-    const newPreviewImages = newFiles.map(file => URL.createObjectURL(file));
-    setPreviewImages([...previewImages, ...newPreviewImages]);
+    const newPreviewImages = validFiles.map(file => URL.createObjectURL(file));
+    setPreviewImages(prev => [...prev, ...newPreviewImages]);
+    
+    // Clear the input to allow selecting the same file again
+    if (event.target) {
+      event.target.value = '';
+    }
   };
 
   const removeImage = (index: number) => {
-    const newImageFiles = [...imageFiles];
-    newImageFiles.splice(index, 1);
-    setImageFiles(newImageFiles);
-
-    const newPreviewImages = [...previewImages];
-    URL.revokeObjectURL(newPreviewImages[index]);
-    newPreviewImages.splice(index, 1);
-    setPreviewImages(newPreviewImages);
+    // Revoke object URL to avoid memory leaks
+    URL.revokeObjectURL(previewImages[index]);
+    
+    // Remove from state
+    setPreviewImages(prev => {
+      const updated = [...prev];
+      updated.splice(index, 1);
+      return updated;
+    });
+    
+    setImageFiles(prev => {
+      const updated = [...prev];
+      updated.splice(index, 1);
+      return updated;
+    });
   };
   
   // Handle drag end event for reordering images
   const handleDragEnd = (result: any) => {
     if (!result.destination) return;
     
-    const items = Array.from(previewImages);
-    const files = Array.from(imageFiles);
+    const sourceIndex = result.source.index;
+    const destIndex = result.destination.index;
     
     // Reorder preview images
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
+    setPreviewImages(prev => {
+      const updated = [...prev];
+      const [moved] = updated.splice(sourceIndex, 1);
+      updated.splice(destIndex, 0, moved);
+      return updated;
+    });
     
-    // Reorder image files to match preview order
-    const [reorderedFile] = files.splice(result.source.index, 1);
-    files.splice(result.destination.index, 0, reorderedFile);
-    
-    setPreviewImages(items);
-    setImageFiles(files);
+    // Reorder image files
+    setImageFiles(prev => {
+      const updated = [...prev];
+      const [moved] = updated.splice(sourceIndex, 1);
+      updated.splice(destIndex, 0, moved);
+      return updated;
+    });
   };
 
   const onSubmit = async (values: ListCarFormValues) => {
     try {
       setIsSubmitting(true);
+      console.log("Starting submission...");
 
       // Check if the user is logged in
       const { data: { session } } = await supabase.auth.getSession();
@@ -82,11 +118,28 @@ export const useListCarForm = () => {
       }
 
       // Generate a slug for the car listing
-      const carSlug = values.name.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, '-');
+      const carSlug = values.name.toLowerCase()
+        .replace(/[^\w\s]/gi, '')
+        .replace(/\s+/g, '-');
 
-      // Handle category and subcategory IDs - ensure they are valid UUIDs or null
-      const categoryId = values.categoryId && values.categoryId !== '1' ? values.categoryId : null;
-      const subcategoryId = values.subcategoryId && values.subcategoryId !== '' ? values.subcategoryId : null;
+      // Handle category and subcategory IDs - properly handle string values
+      let categoryId = null;
+      if (values.categoryId && values.categoryId !== '' && values.categoryId !== '1') {
+        categoryId = values.categoryId;
+      }
+
+      let subcategoryId = null;
+      if (values.subcategoryId && values.subcategoryId !== '') {
+        subcategoryId = values.subcategoryId;
+      }
+
+      console.log("Inserting car listing...");
+      console.log("Values: ", {
+        name: values.name,
+        slug: carSlug,
+        category_id: categoryId,
+        subcategory_id: subcategoryId
+      });
 
       // Create the car listing
       const { data: carListing, error: carError } = await supabase
@@ -94,76 +147,92 @@ export const useListCarForm = () => {
         .insert({
           name: values.name,
           make: values.make,
-          model: values.model,
+          model: values.model || null,
           year: values.year ? parseInt(values.year) : null,
           category_id: categoryId,
           subcategory_id: subcategoryId,
           price: values.price ? parseFloat(values.price) : 0,
           short_description: values.shortDescription,
-          detailed_description: values.detailedDescription,
-          location: values.location,
+          detailed_description: values.detailedDescription || null,
+          location: values.location || null,
           user_id: session.user.id,
           engine_hours: values.engineHours ? parseInt(values.engineHours) : null,
-          engine_specs: values.engineSpecs,
-          race_car_type: values.raceCarType,
-          drivetrain: values.drivetrain,
-          transmission: values.transmission,
-          safety_equipment: values.safetyEquipment,
-          suspension: values.suspension,
-          brakes: values.brakes,
-          weight: values.weight,
-          seller_type: values.sellerType,
+          engine_specs: values.engineSpecs || null,
+          race_car_type: values.raceCarType || null,
+          drivetrain: values.drivetrain || null,
+          transmission: values.transmission || null,
+          safety_equipment: values.safetyEquipment || null,
+          suspension: values.suspension || null,
+          brakes: values.brakes || null,
+          weight: values.weight || null,
+          seller_type: values.sellerType || null,
           slug: carSlug
         })
         .select()
         .single();
 
-      if (carError) throw carError;
+      if (carError) {
+        console.error('Error creating listing:', carError);
+        throw carError;
+      }
 
-      // Handle image uploads if needed
+      console.log("Car listing created:", carListing);
+
+      // Handle image uploads
       if (imageFiles.length > 0 && carListing) {
-        // Process uploads for each image
+        console.log(`Uploading ${imageFiles.length} images...`);
+        
+        // Upload each image sequentially to avoid race conditions
         for (let i = 0; i < imageFiles.length; i++) {
           const file = imageFiles[i];
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${uuidv4()}.${fileExt}`;
-          const filePath = `${session.user.id}/${carListing.id}/${fileName}`;
           
-          // Upload the file to storage
-          const { error: uploadError } = await supabase.storage
-            .from('car-images')
-            .upload(filePath, file);
-          
-          if (uploadError) {
-            console.error('Error uploading image:', uploadError);
-            continue; // Continue with other uploads if one fails
-          }
-          
-          // Get the public URL
-          const { data: publicURL } = supabase.storage
-            .from('car-images')
-            .getPublicUrl(filePath);
-          
-          // Add image record to car_images table
-          const { error: imageRecordError } = await supabase
-            .from('car_images')
-            .insert({
-              car_id: carListing.id,
-              image_url: publicURL.publicUrl,
-              is_primary: i === 0 // First image is primary
-            });
-          
-          if (imageRecordError) {
-            console.error('Error creating image record:', imageRecordError);
+          try {
+            // Generate unique filename
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${uuidv4()}.${fileExt}`;
+            const filePath = `${session.user.id}/${carListing.id}/${fileName}`;
+            
+            console.log(`Uploading image ${i + 1}/${imageFiles.length}: ${filePath}`);
+            
+            // Upload the file to storage
+            const { error: uploadError } = await supabase.storage
+              .from('car-images')
+              .upload(filePath, file);
+            
+            if (uploadError) {
+              console.error(`Error uploading image ${i}:`, uploadError);
+              toast.error(`Failed to upload image ${i + 1}: ${uploadError.message}`);
+              continue;
+            }
+            
+            // Get the public URL
+            const { data: publicURL } = supabase.storage
+              .from('car-images')
+              .getPublicUrl(filePath);
+            
+            console.log(`Image ${i + 1} uploaded, URL:`, publicURL.publicUrl);
+            
+            // Add image record to car_images table
+            const { error: imageRecordError } = await supabase
+              .from('car_images')
+              .insert({
+                car_id: carListing.id,
+                image_url: publicURL.publicUrl,
+                is_primary: i === 0 // First image is primary
+              });
+            
+            if (imageRecordError) {
+              console.error(`Error creating image record ${i}:`, imageRecordError);
+              toast.error(`Failed to save image ${i + 1} to database`);
+            }
+          } catch (err) {
+            console.error(`Unexpected error with image ${i}:`, err);
           }
         }
-        
-        toast.success('Car listing created successfully!');
-        navigate(`/car-details/${carListing.id}/${carListing.slug}`);
-      } else {
-        toast.success('Car listing created successfully!');
-        navigate(`/car-details/${carListing.id}/${carListing.slug}`);
       }
+      
+      toast.success('Car listing created successfully!');
+      navigate(`/car-details/${carSlug}`);
     } catch (err: any) {
       console.error('Error creating listing:', err);
       toast.error(err.message || 'Failed to create listing');

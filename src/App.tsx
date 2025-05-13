@@ -31,8 +31,7 @@ const App = () => (
           <Route path="/listings" element={<Listings />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogArticle />} />
-          <Route path="/car-details/:id" element={<CarDetails />} />
-          <Route path="/car-details/:id/:slug" element={<CarDetails />} />
+          <Route path="/car-details/:slug" element={<CarDetails />} />
           <Route path="/list-car" element={<ListCar />} />
           <Route path="/edit-listing/:id" element={<EditListing />} />
           <Route path="/login" element={<Login />} />
@@ -40,6 +39,8 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/messages/:id" element={<Messages />} />
           <Route path="/blog-manager" element={<BlogManager />} />
+          {/* Legacy route for backward compatibility */}
+          <Route path="/car-details/:id/:slug" element={<CarDetails />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
