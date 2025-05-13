@@ -33,10 +33,12 @@ export type BlogPost = {
   slug: string;
   excerpt: string | null;
   content: string;
-  image_url: string | null;
+  image_url: string | null; // This maps to featured_image in the database
+  featured_image?: string | null; // Optional for compatibility
   published: boolean | null;
   created_at: string;
   updated_at: string;
   author_id?: string | null;
   category_id?: string | null;
+  published_at?: string | null;
 };

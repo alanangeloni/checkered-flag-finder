@@ -27,7 +27,12 @@ const BlogsList = () => {
       toast.error('Failed to load blog posts');
       console.error('Error fetching blog posts:', error);
     } else {
-      setPosts(data as BlogPost[]);
+      // Map the data to match the BlogPost type, including mapping featured_image to image_url
+      const mappedPosts: BlogPost[] = data.map(post => ({
+        ...post,
+        image_url: post.featured_image || null
+      }));
+      setPosts(mappedPosts);
     }
     setIsLoading(false);
   };

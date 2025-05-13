@@ -134,7 +134,7 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
             slug: slug,
             excerpt: values.excerpt,
             content: values.content,
-            featured_image: imageUrl,
+            featured_image: imageUrl, // Update the featured_image field in the database
             published: values.published,
             updated_at: new Date().toISOString(),
           })
@@ -151,7 +151,7 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
             slug: slug,
             excerpt: values.excerpt,
             content: values.content,
-            featured_image: imageUrl,
+            featured_image: imageUrl, // Store the imageUrl in the featured_image field
             published: values.published,
           });
         
