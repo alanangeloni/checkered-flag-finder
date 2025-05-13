@@ -11,8 +11,9 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
-import { UploadCloud, X } from 'lucide-react';
+import { UploadCloud, X, Bold, Italic, Heading2, Heading3, Link, Image as ImageIcon } from 'lucide-react';
 import { BlogPost } from '@/types/customTypes';
+import { v4 as uuidv4 } from 'uuid';
 
 // Form schema for blog post
 const blogPostSchema = z.object({
@@ -30,9 +31,12 @@ interface BlogEditorProps {
 }
 
 const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
-  const [previewImage, setPreviewImage] = useState<string | null>(post?.image_url || null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [featuredImage, setFeaturedImage] = useState<string | null>(post?.image_url || null);
+  const [featuredImageFile, setFeaturedImageFile] = useState<File | null>(null);
+  const [contentImages, setContentImages] = useState<{id: string, file: File, preview: string}[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editorCursorPosition, setEditorCursorPosition] = useState<number | null>(null);
+  const contentTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
   const form = useForm<BlogPostFormValues>({
     resolver: zodResolver(blogPostSchema),
@@ -52,11 +56,11 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
         content: post.content,
         published: post.published || false,
       });
-      setPreviewImage(post.image_url);
+      setFeaturedImage(post.image_url);
     }
   }, [post, form]);
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFeaturedImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -67,15 +71,109 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
 
     const reader = new FileReader();
     reader.onloadend = () => {
-      setPreviewImage(reader.result as string);
+      setFeaturedImage(reader.result as string);
     };
     reader.readAsDataURL(file);
-    setImageFile(file);
+    setFeaturedImageFile(file);
   };
 
-  const removeImage = () => {
-    setPreviewImage(null);
-    setImageFile(null);
+  const removeFeaturedImage = () => {
+    setFeaturedImage(null);
+    setFeaturedImageFile(null);
+  };
+
+  const handleContentImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Image must be less than 5MB");
+      return;
+    }
+
+    const imageId = uuidv4();
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const newImage = {
+        id: imageId,
+        file,
+        preview: reader.result as string
+      };
+      setContentImages([...contentImages, newImage]);
+      
+      // Insert image placeholder at cursor position
+      if (contentTextareaRef.current && editorCursorPosition !== null) {
+        const content = form.getValues('content');
+        const imagePlaceholder = `\n![${file.name}](image:${imageId})\n`;
+        const newContent = 
+          content.substring(0, editorCursorPosition) + 
+          imagePlaceholder + 
+          content.substring(editorCursorPosition);
+        
+        form.setValue('content', newContent);
+      } else {
+        const currentContent = form.getValues('content');
+        const imagePlaceholder = `\n![${file.name}](image:${imageId})\n`;
+        form.setValue('content', currentContent + imagePlaceholder);
+      }
+    };
+    reader.readAsDataURL(file);
+    
+    // Clear input to allow selecting same file again
+    if (e.target) {
+      e.target.value = '';
+    }
+  };
+
+  const saveContentCursorPosition = () => {
+    if (contentTextareaRef.current) {
+      setEditorCursorPosition(contentTextareaRef.current.selectionStart);
+    }
+  };
+
+  const insertFormat = (format: string) => {
+    if (!contentTextareaRef.current) return;
+    
+    const start = contentTextareaRef.current.selectionStart;
+    const end = contentTextareaRef.current.selectionEnd;
+    const content = form.getValues('content');
+    let newContent = content;
+    let newCursorPos = start;
+    
+    const selectedText = content.substring(start, end);
+    
+    switch (format) {
+      case 'bold':
+        newContent = content.substring(0, start) + `**${selectedText}**` + content.substring(end);
+        newCursorPos = start + 2 + selectedText.length;
+        break;
+      case 'italic':
+        newContent = content.substring(0, start) + `*${selectedText}*` + content.substring(end);
+        newCursorPos = start + 1 + selectedText.length;
+        break;
+      case 'h2':
+        newContent = content.substring(0, start) + `\n## ${selectedText}\n` + content.substring(end);
+        newCursorPos = start + 4 + selectedText.length;
+        break;
+      case 'h3':
+        newContent = content.substring(0, start) + `\n### ${selectedText}\n` + content.substring(end);
+        newCursorPos = start + 5 + selectedText.length;
+        break;
+      case 'link':
+        newContent = content.substring(0, start) + `[${selectedText}](url)` + content.substring(end);
+        newCursorPos = start + selectedText.length + 3;
+        break;
+    }
+    
+    form.setValue('content', newContent);
+    
+    // Set focus back to textarea
+    setTimeout(() => {
+      if (contentTextareaRef.current) {
+        contentTextareaRef.current.focus();
+        contentTextareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 0);
   };
 
   const generateSlug = (title: string): string => {
@@ -88,27 +186,58 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
   const onSubmit = async (values: BlogPostFormValues) => {
     try {
       setIsSubmitting(true);
+      const { data: { session } } = await supabase.auth.getSession();
       
-      let imageUrl = post?.image_url || '';
+      if (!session) {
+        toast.error("You must be logged in to upload images");
+        return;
+      }
       
-      // Handle image upload if there's a new image
-      if (imageFile) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          toast.error("You must be logged in to upload images");
-          return;
-        }
+      // Process content images first
+      let processedContent = values.content;
+      
+      for (const image of contentImages) {
+        if (processedContent.includes(`image:${image.id}`)) {
+          // Upload the image to storage
+          const fileExt = image.file.name.split('.').pop();
+          const fileName = `${Date.now()}-${image.id}.${fileExt}`;
+          const filePath = `blog/content/${fileName}`;
 
+          const { error: uploadError } = await supabase
+            .storage
+            .from('blog_images')
+            .upload(filePath, image.file);
+
+          if (uploadError) {
+            console.error('Error uploading content image:', uploadError);
+            continue;
+          }
+
+          // Get the public URL
+          const { data: urlData } = await supabase
+            .storage
+            .from('blog_images')
+            .getPublicUrl(filePath);
+
+          // Replace the placeholder with the actual URL
+          processedContent = processedContent.replace(`image:${image.id}`, urlData.publicUrl);
+        }
+      }
+      
+      // Handle featured image upload
+      let featuredImageUrl = post?.image_url || '';
+      
+      if (featuredImageFile) {
         // Create a unique file name
-        const fileExt = imageFile.name.split('.').pop();
-        const fileName = `${Date.now()}.${fileExt}`;
-        const filePath = `blog/${fileName}`;
+        const fileExt = featuredImageFile.name.split('.').pop();
+        const fileName = `featured-${Date.now()}.${fileExt}`;
+        const filePath = `blog/featured/${fileName}`;
 
         // Upload image to Supabase Storage
         const { error: storageError } = await supabase
           .storage
           .from('blog_images')
-          .upload(filePath, imageFile);
+          .upload(filePath, featuredImageFile);
 
         if (storageError) {
           throw storageError;
@@ -120,7 +249,7 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
           .from('blog_images')
           .getPublicUrl(filePath);
 
-        imageUrl = urlData.publicUrl;
+        featuredImageUrl = urlData.publicUrl;
       }
 
       const slug = generateSlug(values.title);
@@ -133,8 +262,8 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
             title: values.title,
             slug: slug,
             excerpt: values.excerpt,
-            content: values.content,
-            featured_image: imageUrl, // Update the featured_image field in the database
+            content: processedContent,
+            featured_image: featuredImageUrl,
             published: values.published,
             updated_at: new Date().toISOString(),
           })
@@ -150,8 +279,8 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
             title: values.title,
             slug: slug,
             excerpt: values.excerpt,
-            content: values.content,
-            featured_image: imageUrl, // Store the imageUrl in the featured_image field
+            content: processedContent,
+            featured_image: featuredImageUrl,
             published: values.published,
           });
         
@@ -163,8 +292,9 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
           content: '',
           published: false,
         });
-        setPreviewImage(null);
-        setImageFile(null);
+        setFeaturedImage(null);
+        setFeaturedImageFile(null);
+        setContentImages([]);
       }
       
       if (onSaved) onSaved();
@@ -216,10 +346,10 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
         <div>
           <FormLabel>Featured Image</FormLabel>
           <Card className="mt-2 border-2 border-dashed border-gray-300 p-6">
-            {previewImage ? (
+            {featuredImage ? (
               <div className="relative">
                 <img 
-                  src={previewImage} 
+                  src={featuredImage} 
                   alt="Blog preview" 
                   className="w-full h-64 object-cover" 
                 />
@@ -228,7 +358,7 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
                   variant="destructive"
                   size="icon"
                   className="absolute top-2 right-2"
-                  onClick={removeImage}
+                  onClick={removeFeaturedImage}
                 >
                   <X size={16} />
                 </Button>
@@ -239,16 +369,16 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
                 <p className="text-sm text-gray-600">Upload a featured image</p>
                 <p className="text-xs text-gray-500 mb-4">PNG, JPG up to 5MB</p>
                 <Input
-                  id="image"
+                  id="featured-image"
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={handleImageUpload}
+                  onChange={handleFeaturedImageUpload}
                 />
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => document.getElementById('image')?.click()}
+                  onClick={() => document.getElementById('featured-image')?.click()}
                 >
                   Select Image
                 </Button>
@@ -263,13 +393,96 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
           render={({ field }) => (
             <FormItem>
               <FormLabel>Content</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Write your blog post content here"
-                  className="min-h-[300px] font-mono"
-                  {...field}
-                />
-              </FormControl>
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2 p-2 bg-gray-100 rounded-t-md border border-b-0 border-gray-300">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => insertFormat('h2')}
+                    title="Heading 2"
+                  >
+                    <Heading2 size={16} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => insertFormat('h3')}
+                    title="Heading 3"
+                  >
+                    <Heading3 size={16} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => insertFormat('bold')}
+                    title="Bold"
+                  >
+                    <Bold size={16} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => insertFormat('italic')}
+                    title="Italic"
+                  >
+                    <Italic size={16} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => insertFormat('link')}
+                    title="Insert Link"
+                  >
+                    <Link size={16} />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    title="Insert Image"
+                  >
+                    <label htmlFor="content-image" className="cursor-pointer flex items-center">
+                      <ImageIcon size={16} />
+                    </label>
+                    <Input
+                      id="content-image"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleContentImageUpload}
+                    />
+                  </Button>
+                </div>
+
+                <FormControl>
+                  <Textarea 
+                    placeholder="Write your blog post content here. Use the formatting toolbar above to add headings, bold, italic, links and images."
+                    className="min-h-[300px] font-mono rounded-t-none"
+                    rows={12}
+                    onFocus={saveContentCursorPosition}
+                    onClick={saveContentCursorPosition}
+                    onKeyUp={saveContentCursorPosition}
+                    ref={(e) => {
+                      field.ref(e);
+                      contentTextareaRef.current = e;
+                    }}
+                    {...field}
+                    value={field.value}
+                    onChange={(e) => {
+                      field.onChange(e);
+                      saveContentCursorPosition();
+                    }}
+                  />
+                </FormControl>
+                <p className="text-xs text-gray-500">
+                  Supports Markdown formatting. Use the toolbar for quick formatting options.
+                </p>
+              </div>
               <FormMessage />
             </FormItem>
           )}

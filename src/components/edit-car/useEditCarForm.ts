@@ -88,7 +88,7 @@ export const useEditCarForm = (carId: string | undefined) => {
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
-    if (!files) return;
+    if (!files || files.length === 0) return;
     
     // Store the files for later upload
     const newFiles = Array.from(files);
@@ -97,6 +97,11 @@ export const useEditCarForm = (carId: string | undefined) => {
     // Create preview URLs
     const newPreviewImages = newFiles.map(file => URL.createObjectURL(file));
     setPreviewImages([...previewImages, ...newPreviewImages]);
+    
+    // Clear the input to allow selecting the same file again
+    if (event.target) {
+      event.target.value = '';
+    }
   };
 
   const removeImage = (index: number) => {
@@ -202,6 +207,8 @@ export const useEditCarForm = (carId: string | undefined) => {
           const fileExt = file.name.split('.').pop();
           const fileName = `${uuidv4()}.${fileExt}`;
           const filePath = `${session.user.id}/${updatedCar.id}/${fileName}`;
+          
+          console.log('Uploading image to:', filePath);
           
           // Upload the file to storage
           const { error: uploadError } = await supabase.storage
