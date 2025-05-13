@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ListCarFormValues, formSchema, defaultFormValues } from './ListCarSchema';
+import { v4 as uuidv4 } from 'uuid';
 
 export const useListCarForm = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -105,6 +106,7 @@ export const useListCarForm = () => {
           brakes: values.brakes,
           weight: values.weight,
           seller_type: values.sellerType,
+          slug: values.name.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, '-')
         })
         .select()
         .single();
@@ -113,12 +115,11 @@ export const useListCarForm = () => {
 
       // Handle image uploads if needed
       if (imageFiles.length > 0 && carListing) {
-        // Logic for handling image uploads would go here
         toast.success('Car listing created successfully!');
-        navigate(`/car-details/${carListing.id}`);
+        navigate(`/car-details/${carListing.id}/${carListing.slug}`);
       } else {
         toast.success('Car listing created successfully!');
-        navigate(`/car-details/${carListing.id}`);
+        navigate(`/car-details/${carListing.id}/${carListing.slug}`);
       }
     } catch (err: any) {
       console.error('Error creating listing:', err);

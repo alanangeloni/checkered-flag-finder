@@ -11,10 +11,20 @@ import CarDetailsError from '@/components/car-details/CarDetailsError';
 import CarDetailsContent from '@/components/car-details/CarDetailsContent';
 
 const CarDetails = () => {
-  const { id } = useParams();
+  const { id, slug } = useParams();
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const navigate = useNavigate();
   const { carListing, relatedListings, loading, error, isLoggedIn, images } = useCarDetails(id);
+
+  // If we have a car listing but the URL doesn't match the slug, redirect to the proper URL
+  React.useEffect(() => {
+    if (carListing && !loading) {
+      const carSlug = carListing.slug || carListing.name.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, '-');
+      if (!slug && carSlug) {
+        navigate(`/car-details/${id}/${carSlug}`, { replace: true });
+      }
+    }
+  }, [carListing, slug, id, navigate, loading]);
 
   const handleContactClick = () => {
     if (!isLoggedIn) {

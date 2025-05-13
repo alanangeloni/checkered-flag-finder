@@ -15,6 +15,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
 import Messages from "./pages/Messages";
+import BlogManager from "./pages/BlogManager";
 
 const queryClient = new QueryClient();
 
@@ -29,12 +30,13 @@ const App = () => (
           <Route path="/listings" element={<Listings />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogArticle />} />
-          <Route path="/car-details/:id" element={<CarDetails />} />
+          <Route path="/car-details/:id/:slug?" element={<CarDetails />} />
           <Route path="/list-car" element={<ListCar />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/messages/:id" element={<Messages />} />
+          <Route path="/blog-manager" element={<BlogManager />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
