@@ -12,72 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Filter, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-// Mock data for demonstration while we fetch real data
-const mockListings = [{
-  id: 1,
-  title: "2021 Ferrari 488 GTB",
-  price: 299000,
-  location: "Miami, FL",
-  mileage: 3500,
-  image: "https://images.unsplash.com/photo-1592198084033-aade902d1aae",
-  category: "Sport",
-  subcategory: "Luxury"
-}, {
-  id: 2,
-  title: "2022 Porsche 911 GT3",
-  price: 189000,
-  location: "Los Angeles, CA",
-  mileage: 1200,
-  image: "https://images.unsplash.com/photo-1503376780353-7e6692767b70",
-  category: "Sport",
-  subcategory: "Performance"
-}, {
-  id: 3,
-  title: "2020 Lamborghini Huracán",
-  price: 275000,
-  location: "Las Vegas, NV",
-  mileage: 5200,
-  image: "https://images.unsplash.com/photo-1514867644123-6385d58d3cd4",
-  category: "Sport",
-  subcategory: "Luxury"
-}, {
-  id: 4,
-  title: "2019 McLaren 720S",
-  price: 245000,
-  location: "New York, NY",
-  mileage: 8900,
-  image: "https://images.unsplash.com/photo-1544636331-e26879cd4d9b",
-  category: "Sport",
-  subcategory: "Supercar"
-}, {
-  id: 5,
-  title: "2023 Aston Martin Vantage",
-  price: 178000,
-  location: "Chicago, IL",
-  mileage: 650,
-  image: "https://images.unsplash.com/photo-1542362567-b07e54358753",
-  category: "Sport",
-  subcategory: "Luxury"
-}, {
-  id: 6,
-  title: "2018 Nissan GT-R Nismo",
-  price: 135000,
-  location: "Seattle, WA",
-  mileage: 12500,
-  image: "public/lovable-uploads/0142baeb-373b-448f-9a23-a1d1bc774af9.png",
-  category: "Sport",
-  subcategory: "Performance"
-}];
-
-// Price format helper
-const formatPrice = (price: number) => {
-  return `$${price.toLocaleString()}`;
-};
+import { CarListingWithImages } from '@/types/customTypes';
 
 const Listings = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [priceRange, setPriceRange] = useState<[number, number]>([100000, 300000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 500000]);
   const [showFilters, setShowFilters] = useState(false);
   const [sort, setSort] = useState('newest');
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -86,18 +25,20 @@ const Listings = () => {
   // State for database data
   const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
   const [subcategories, setSubcategories] = useState<{[key: string]: {id: string, name: string}[]}>({}); 
-  const [listings, setListings] = useState(mockListings); // Start with mock data
+  const [listings, setListings] = useState<CarListingWithImages[]>([]); 
   const [isLoading, setIsLoading] = useState(true);
   const [availableSubcategories, setAvailableSubcategories] = useState<{id: string, name: string}[]>([]);
 
-  // Min and max prices from data
-  const minPrice = 100000;
-  const maxPrice = 300000;
+  // Min and max prices from data - will be updated based on actual data
+  const [minPrice, setMinPrice] = useState(0);
+  const [maxPrice, setMaxPrice] = useState(500000);
 
-  // Fetch categories and subcategories from database
+  // Fetch listings, categories and subcategories from database
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchData = async () => {
       try {
+        setIsLoading(true);
+        
         // Fetch all categories
         const { data: categoriesData, error: categoriesError } = await supabase
           .from('categories')
@@ -144,36 +85,84 @@ const Listings = () => {
         setSubcategories(subcategoryMap);
         setAvailableSubcategories(subcategoryMap.all || []);
         
-        // Later we would fetch actual car listings here
-        // For now we'll continue using the mock data
+        // Fetch car listings
+        const { data: listingsData, error: listingsError } = await supabase
+          .from('car_listings')
+          .select(`
+            *,
+            images:car_images(*)
+          `)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false });
+          
+        if (listingsError) throw listingsError;
+        
+        // Process the data
+        const formattedListings = listingsData.map((listing: any) => ({
+          ...listing,
+          primary_image: listing.images && listing.images.length > 0 
+            ? listing.images.find((img: any) => img.is_primary)?.image_url || listing.images[0].image_url
+            : null
+        }));
+        
+        setListings(formattedListings);
+        
+        // Calculate price range from actual listings
+        if (formattedListings.length > 0) {
+          const prices = formattedListings.map(listing => Number(listing.price));
+          const min = Math.floor(Math.min(...prices));
+          const max = Math.ceil(Math.max(...prices));
+          setMinPrice(min);
+          setMaxPrice(max);
+          setPriceRange([min, max]);
+        }
+        
         setIsLoading(false);
       } catch (error) {
-        console.error('Error fetching categories:', error);
-        toast.error('Failed to load categories');
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load listings');
         setIsLoading(false);
       }
     };
     
-    fetchCategories();
+    fetchData();
   }, []);
 
   // Filter listings based on search, price range, category, and subcategory
   const filteredListings = listings.filter(listing => {
-    const matchesSearch = listing.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         (listing.location && listing.location.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesPrice = listing.price >= priceRange[0] && listing.price <= priceRange[1];
-    const matchesCategory = selectedCategory === "all" || listing.category === selectedCategory;
-    const matchesSubcategory = selectedSubcategory === "all" || listing.subcategory === selectedSubcategory;
+    const searchFields = [
+      listing.name, 
+      listing.make, 
+      listing.model, 
+      listing.location,
+      listing.short_description
+    ].filter(Boolean).map(field => field.toLowerCase());
+    
+    const matchesSearch = searchTerm === '' || 
+                          searchFields.some(field => field.includes(searchTerm.toLowerCase()));
+    
+    const price = Number(listing.price);
+    const matchesPrice = price >= priceRange[0] && price <= priceRange[1];
+    
+    const matchesCategory = selectedCategory === "all" || listing.category_id === selectedCategory;
+    const matchesSubcategory = selectedSubcategory === "all" || listing.subcategory_id === selectedSubcategory;
+    
     return matchesSearch && matchesPrice && matchesCategory && matchesSubcategory;
   });
 
   // Sort listings
   const sortedListings = [...filteredListings].sort((a, b) => {
-    if (sort === 'price-low') return a.price - b.price;
-    if (sort === 'price-high') return b.price - a.price;
-    if (sort === 'mileage') return a.mileage - b.mileage;
+    if (sort === 'price-low') return Number(a.price) - Number(b.price);
+    if (sort === 'price-high') return Number(b.price) - Number(a.price);
+    if (sort === 'mileage') {
+      const mileageA = a.mileage || Number.MAX_SAFE_INTEGER;
+      const mileageB = b.mileage || Number.MAX_SAFE_INTEGER;
+      return mileageA - mileageB;
+    }
     // Default: newest
-    return b.id - a.id;
+    const dateA = new Date(a.created_at);
+    const dateB = new Date(b.created_at);
+    return dateB.getTime() - dateA.getTime();
   });
 
   // Handle category change
@@ -187,6 +176,11 @@ const Listings = () => {
     } else {
       setAvailableSubcategories(subcategories.all || []);
     }
+  };
+  
+  // Format price for display
+  const formatPrice = (price: number) => {
+    return `$${price.toLocaleString()}`;
   };
   
   return (
@@ -308,39 +302,55 @@ const Listings = () => {
 
           {/* Show loading state */}
           {isLoading && (
-            <div className="text-center py-16">
-              <p className="text-gray-500">Loading car listings...</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i} className="overflow-hidden rounded-lg border-0 shadow">
+                  <div className="w-full h-48 bg-gray-200 animate-pulse"></div>
+                  <CardContent className="p-4">
+                    <div className="h-6 bg-gray-200 animate-pulse mb-2 w-3/4"></div>
+                    <div className="h-4 bg-gray-200 animate-pulse mb-2 w-1/2"></div>
+                    <div className="h-4 bg-gray-200 animate-pulse w-1/4"></div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
 
           {/* Listings grid */}
           {!isLoading && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {sortedListings.map(car => (
-                <Link to={`/car-details/${car.id}`} key={car.id}>
-                  <Card className="overflow-hidden rounded-lg hover:shadow-lg transition-shadow h-full border-0 shadow">
-                    <div className="relative">
-                      <img 
-                        src={car.image} 
-                        alt={car.title} 
-                        className="w-full h-48 object-cover" 
-                      />
-                      <div className="absolute bottom-0 left-0 bg-white text-black font-bold px-4 py-1 m-3 rounded">
-                        ${car.price.toLocaleString()}
+              {sortedListings.map(car => {
+                const imageUrl = car.primary_image || 
+                              (car.images && car.images.length > 0 ? 
+                               car.images[0].image_url : 
+                               'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5');
+                
+                return (
+                  <Link to={`/car-details/${car.id}/${car.slug || ''}`} key={car.id}>
+                    <Card className="overflow-hidden rounded-lg hover:shadow-lg transition-shadow h-full border-0 shadow">
+                      <div className="relative">
+                        <img 
+                          src={imageUrl} 
+                          alt={car.name} 
+                          className="w-full h-48 object-cover" 
+                        />
+                        <div className="absolute bottom-0 left-0 bg-white text-black font-bold px-4 py-1 m-3 rounded">
+                          ${Number(car.price).toLocaleString()}
+                        </div>
                       </div>
-                    </div>
-                    <CardContent className="p-4">
-                      <h3 className="text-lg font-bold">{car.title}</h3>
-                      <div className="text-xs text-gray-600 mt-1">
-                        Race Car Details, Race Car Details, Race Car Details
-                      </div>
-                      <div className="text-xs text-gray-600 mt-2">
-                        {car.location}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              ))}
+                      <CardContent className="p-4">
+                        <h3 className="text-lg font-bold">{car.name}</h3>
+                        <div className="text-xs text-gray-600 mt-1">
+                          {[car.make, car.model, car.year].filter(Boolean).join(' • ')}
+                        </div>
+                        <div className="text-xs text-gray-600 mt-2">
+                          {car.location || 'Location not specified'}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
             </div>
           )}
 

@@ -1,1 +1,7 @@
+
 project_id = "vxkzrgsseeiuamimxiih"
+
+[storage]
+[[storage.buckets]]
+name = "car-images"
+public = true

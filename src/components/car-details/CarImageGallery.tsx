@@ -11,14 +11,17 @@ interface CarImageGalleryProps {
 const CarImageGallery = ({ images, carName, isFeatured = false }: CarImageGalleryProps) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   
+  // Ensure we have a non-empty array of images
+  const validImages = images && images.length > 0 ? images : ['https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5'];
+  
   const nextImage = () => {
-    if (images.length === 0) return;
-    setActiveImageIndex((prev) => (prev + 1) % images.length);
+    if (validImages.length <= 1) return;
+    setActiveImageIndex((prev) => (prev + 1) % validImages.length);
   };
 
   const prevImage = () => {
-    if (images.length === 0) return;
-    setActiveImageIndex((prev) => (prev - 1 + images.length) % images.length);
+    if (validImages.length <= 1) return;
+    setActiveImageIndex((prev) => (prev - 1 + validImages.length) % validImages.length);
   };
   
   const selectImage = (index: number) => {
@@ -30,18 +33,12 @@ const CarImageGallery = ({ images, carName, isFeatured = false }: CarImageGaller
       {/* Large Main Image */}
       <div className="flex-grow order-1">
         <div className="relative rounded-lg overflow-hidden bg-gray-100 h-[500px] w-full">
-          {images.length > 0 ? (
-            <img 
-              src={images[activeImageIndex]} 
-              alt={carName} 
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-200">
-              <p className="text-gray-500">No image available</p>
-            </div>
-          )}
-          {images.length > 1 && (
+          <img 
+            src={validImages[activeImageIndex]} 
+            alt={carName} 
+            className="w-full h-full object-cover"
+          />
+          {validImages.length > 1 && (
             <>
               <button
                 onClick={prevImage}
@@ -64,18 +61,18 @@ const CarImageGallery = ({ images, carName, isFeatured = false }: CarImageGaller
               FEATURED
             </div>
           )}
-          {images.length > 0 && (
+          {validImages.length > 1 && (
             <div className="absolute bottom-4 right-4 bg-black/50 text-white px-3 py-1 rounded-full text-xs">
-              {activeImageIndex + 1}/{images.length}
+              {activeImageIndex + 1}/{validImages.length}
             </div>
           )}
         </div>
       </div>
       
       {/* Thumbnails Grid - Right Side Column */}
-      {images.length > 1 && (
+      {validImages.length > 1 && (
         <div className="md:order-2 flex md:flex-col gap-2 overflow-x-auto md:overflow-y-auto md:w-[120px] md:h-[500px]">
-          {images.slice(0, 6).map((image, index) => (
+          {validImages.slice(0, 6).map((image, index) => (
             <div 
               key={index}
               className={`cursor-pointer rounded-md overflow-hidden flex-shrink-0 w-[120px] h-[80px] ${index === activeImageIndex ? 'ring-2 ring-racecar-red' : ''}`}
@@ -84,9 +81,9 @@ const CarImageGallery = ({ images, carName, isFeatured = false }: CarImageGaller
               <img src={image} alt={`${carName} thumbnail ${index + 1}`} className="w-full h-full object-cover" />
             </div>
           ))}
-          {images.length > 6 && (
+          {validImages.length > 6 && (
             <div className="flex-shrink-0 w-[120px] h-[80px] rounded-md bg-black/70 text-white flex items-center justify-center text-sm">
-              +{images.length - 6} more
+              +{validImages.length - 6} more
             </div>
           )}
         </div>
