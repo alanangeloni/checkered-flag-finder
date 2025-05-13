@@ -53,26 +53,55 @@ const RecentlyListedCars = () => {
     const fetchListings = async () => {
       try {
         setLoading(true);
+        console.log('Fetching recently listed cars...');
         
-        const { data, error } = await supabase
+        // First, try to get car listings without the relationship to images
+        const { data: basicListings, error: basicError } = await supabase
           .from('car_listings')
-          .select(`
-            *,
-            images:car_images(*)
-          `)
-          .eq('status', 'active')
+          .select('*')
           .order('created_at', { ascending: false })
           .limit(8);
         
-        if (error) {
-          console.error('Error fetching listings:', error);
-          return;
+        if (basicError) {
+          console.error('Error fetching basic listings:', basicError);
+          throw basicError;
         }
         
-        console.log('Fetched car listings with images:', data);
-        setListings(data as CarListingWithImages[] || []);
+        console.log('Successfully fetched basic car listings:', basicListings?.length || 0);
+        
+        // If we have basic listings, try to get their images separately
+        if (basicListings && basicListings.length > 0) {
+          const listingsWithImages = await Promise.all(
+            basicListings.map(async (listing) => {
+              try {
+                const { data: images, error: imagesError } = await supabase
+                  .from('car_images')
+                  .select('*')
+                  .eq('car_id', listing.id);
+                
+                if (imagesError) {
+                  console.warn(`Error fetching images for car ${listing.id}:`, imagesError);
+                  return { ...listing, images: [] };
+                }
+                
+                return { ...listing, images: images || [] };
+              } catch (err) {
+                console.warn(`Error processing images for car ${listing.id}:`, err);
+                return { ...listing, images: [] };
+              }
+            })
+          );
+          
+          console.log('Successfully processed listings with images:', listingsWithImages.length);
+          setListings(listingsWithImages as CarListingWithImages[]);
+        } else {
+          // No listings found
+          setListings([]);
+        }
       } catch (err) {
         console.error('Error in fetching car listings:', err);
+        // Set empty listings to avoid showing loading state indefinitely
+        setListings([]);
       } finally {
         setLoading(false);
       }

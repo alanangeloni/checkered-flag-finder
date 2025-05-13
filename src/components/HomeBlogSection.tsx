@@ -1,47 +1,64 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from "@/components/ui/card";
 import { useIsMobile } from '@/hooks/use-mobile';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+import { BlogPost } from '@/types/customTypes';
 
-// Sample blog posts data with dates formatted as MM/DD/YY
-const featuredPosts = [
-  {
-    id: 1,
-    title: "The Mental Side of Racing: Techniques for Improving Focus and Concentration",
-    excerpt: "A deep dive into how mental preparation can improve racing performance.",
-    date: "10/22/24",
-    image: "https://images.unsplash.com/photo-1617196701537-7329482cc9fe",
-    slug: "mental-side-of-racing"
-  },
-  {
-    id: 2,
-    title: "Why Rallycross is Gaining Global Popularity",
-    excerpt: "Exploring the factors behind the rising popularity of rallycross events worldwide.",
-    date: "10/22/24",
-    image: "https://images.unsplash.com/photo-1516546453174-5e1098a4b4af",
-    slug: "rallycross-global-popularity"
-  },
-  {
-    id: 3,
-    title: "How Historic Racing Series Keep Motorsports History Alive",
-    excerpt: "Celebrating the importance of historic racing events in preserving automotive heritage.",
-    date: "10/22/24",
-    image: "https://images.unsplash.com/photo-1574275555839-061fbe6723e6",
-    slug: "historic-racing-series"
-  },
-  {
-    id: 4,
-    title: "Electric Racing: The Future of Motorsports",
-    excerpt: "How electric racing series are changing the landscape of competitive motorsports.",
-    date: "10/21/24",
-    image: "https://images.unsplash.com/photo-1661956602139-ec64991b8b16",
-    slug: "electric-racing-future"
-  }
-];
+// Default placeholder image if blog post has no image
+const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1617196701537-7329482cc9fe";
 
 const HomeBlogSection = () => {
   const isMobile = useIsMobile();
+  const [featuredPosts, setFeaturedPosts] = useState<BlogPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchBlogPosts = async () => {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('blog_articles')
+        .select('*')
+        .eq('published', true)
+        .order('created_at', { ascending: false })
+        .limit(4);
+      
+      if (error) {
+        console.error('Error fetching blog posts:', error);
+        setIsLoading(false);
+        return;
+      }
+      
+      // Map the data to match the BlogPost type
+      const formattedPosts: BlogPost[] = data.map(post => ({
+        id: post.id,
+        title: post.title,
+        slug: post.slug || post.id,
+        excerpt: post.excerpt,
+        content: post.content,
+        image_url: post.featured_image || DEFAULT_IMAGE,
+        featured_image: post.featured_image,
+        published: post.published,
+        created_at: post.created_at,
+        updated_at: post.updated_at,
+        author_id: post.author_id,
+        category_id: post.category_id,
+        published_at: post.published_at
+      }));
+      
+      setFeaturedPosts(formattedPosts);
+      setIsLoading(false);
+    };
+
+    fetchBlogPosts();
+  }, []);
+  
+  // If no posts are available or still loading, don't render the section
+  if (isLoading || featuredPosts.length === 0) {
+    return null;
+  }
   
   // Get the main featured post and the remaining posts for the sidebar
   const mainPost = featuredPosts[0];
@@ -57,7 +74,7 @@ const HomeBlogSection = () => {
           <Link to={`/blog/${mainPost.slug}`} className="block h-full">
             <div className="rounded-lg overflow-hidden shadow-md h-[16rem] sm:h-[21.5rem] relative">
               <img 
-                src={mainPost.image} 
+                src={mainPost.image_url || DEFAULT_IMAGE} 
                 alt={mainPost.title} 
                 className="w-full h-full object-cover"
               />
@@ -75,14 +92,14 @@ const HomeBlogSection = () => {
               <div className="flex items-start space-x-3 sm:space-x-4">
                 <div className="w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0">
                   <img 
-                    src={post.image} 
+                    src={post.image_url || DEFAULT_IMAGE} 
                     alt={post.title} 
                     className="w-full h-full object-cover rounded-lg"
                   />
                 </div>
                 <div className="flex-1">
                   <h3 className="font-bold text-base sm:text-lg text-black line-clamp-2">{post.title}</h3>
-                  <p className="text-gray-500 text-xs sm:text-sm mt-1">{post.date}</p>
+                  <p className="text-gray-500 text-xs sm:text-sm mt-1">{format(new Date(post.created_at), 'MM/dd/yy')}</p>
                 </div>
               </div>
             </Link>

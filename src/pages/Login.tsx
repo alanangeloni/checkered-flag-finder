@@ -28,20 +28,88 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      console.log('Starting login process...');
       
-      if (error) {
-        throw error;
+      // Clear any previous sessions first to avoid conflicts
+      await supabase.auth.signOut();
+      console.log('Previous sessions cleared');
+      
+      // Maximum number of retries
+      const MAX_RETRIES = 3;
+      let retryCount = 0;
+      let loginSuccessful = false;
+      let lastError: any = null;
+      
+      // Retry login with exponential backoff
+      while (retryCount < MAX_RETRIES && !loginSuccessful) {
+        try {
+          console.log(`Login attempt ${retryCount + 1}/${MAX_RETRIES}`);
+          
+          // Attempt to sign in
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          
+          if (error) {
+            console.error(`Login attempt ${retryCount + 1} error:`, error);
+            lastError = error;
+            throw error;
+          }
+          
+          if (!data.session) {
+            const noSessionError = new Error('No session returned from authentication');
+            console.error(`Login attempt ${retryCount + 1} error:`, noSessionError);
+            lastError = noSessionError;
+            throw noSessionError;
+          }
+          
+          // Verify the session was created
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (!sessionData.session) {
+            const sessionValidationError = new Error('Session validation failed');
+            console.error(`Login attempt ${retryCount + 1} error:`, sessionValidationError);
+            lastError = sessionValidationError;
+            throw sessionValidationError;
+          }
+          
+          // If we got here, login was successful
+          loginSuccessful = true;
+          console.log('Login successful, session established');
+          
+          // Store user info in localStorage for better persistence
+          try {
+            localStorage.setItem('checkered-flag-user', JSON.stringify({
+              id: data.user?.id,
+              email: data.user?.email,
+              last_login: new Date().toISOString()
+            }));
+          } catch (storageError) {
+            console.warn('Could not save user data to localStorage:', storageError);
+            // Non-critical error, continue
+          }
+          
+          toast.success('Login successful!');
+          navigate('/');
+        } catch (attemptError) {
+          retryCount++;
+          
+          if (retryCount < MAX_RETRIES) {
+            // Wait with exponential backoff before retrying
+            const delay = 1000 * Math.pow(2, retryCount - 1); // 1s, 2s, 4s
+            console.log(`Retrying login in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
       }
       
-      toast.success('Login successful!');
-      navigate('/');
+      // If we exhausted all retries and still failed
+      if (!loginSuccessful) {
+        throw lastError || new Error('Login failed after multiple attempts');
+      }
     } catch (error: any) {
-      toast.error(error.message || 'Login failed. Please check your credentials.');
-      console.error(error);
+      toast.error(error.message || 'Login failed. Please check your credentials and try again.');
+      console.error('Authentication error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -94,6 +162,9 @@ const Login = () => {
               >
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>
+              <div className="text-xs text-center mt-2 text-gray-500">
+                Having trouble? Try refreshing the page or clearing your browser cache.
+              </div>
             </form>
           </CardContent>
           <CardFooter className="flex justify-center">

@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 const Header = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   useEffect(() => {
@@ -26,6 +27,19 @@ const Header = () => {
         }
       } = await supabase.auth.getSession();
       setUser(session?.user || null);
+      
+      // Check if user is admin
+      if (session?.user) {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+        
+        setIsAdmin(profile?.is_admin || false);
+      } else {
+        setIsAdmin(false);
+      }
     };
     checkUser();
 
@@ -34,9 +48,22 @@ const Header = () => {
       data: {
         subscription
       }
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log("Auth state changed:", event, session?.user);
       setUser(session?.user || null);
+      
+      // Check if user is admin on auth state change
+      if (session?.user) {
+        const { data: profile, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+        
+        setIsAdmin(profile?.is_admin || false);
+      } else {
+        setIsAdmin(false);
+      }
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -104,9 +131,16 @@ const Header = () => {
                     <Link to="/my-listings" className="px-2 py-2 hover:bg-gray-100 rounded-md">
                       My Listings
                     </Link>
-                    <Link to="/blog-manager" className="px-2 py-2 hover:bg-gray-100 rounded-md">
-                      Blog Manager
-                    </Link>
+                    {isAdmin && (
+                      <>
+                        <Link to="/admin" className="px-2 py-2 hover:bg-gray-100 rounded-md">
+                          Admin Dashboard
+                        </Link>
+                        <Link to="/blog-manager" className="px-2 py-2 hover:bg-gray-100 rounded-md">
+                          Blog Manager
+                        </Link>
+                      </>
+                    )}
                     <Link to="/settings" className="px-2 py-2 hover:bg-gray-100 rounded-md">
                       Settings
                     </Link>
@@ -213,9 +247,16 @@ const Header = () => {
                     <DropdownMenuItem asChild>
                       <Link to="/my-listings" className="w-full cursor-pointer">My Listings</Link>
                     </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/blog-manager" className="w-full cursor-pointer">Blog Manager</Link>
-                    </DropdownMenuItem>
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link to="/admin" className="w-full cursor-pointer">Admin Dashboard</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link to="/blog-manager" className="w-full cursor-pointer">Blog Manager</Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuItem asChild>
                       <Link to="/settings" className="w-full cursor-pointer">Settings</Link>
                     </DropdownMenuItem>

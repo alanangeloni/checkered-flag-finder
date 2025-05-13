@@ -1,92 +1,163 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { format } from 'date-fns';
+import { BlogPost } from '@/types/customTypes';
 
-// Mock blog article data
-const blogArticles = [
-  {
-    id: 1,
-    slug: "evolution-of-formula-1-aerodynamics",
-    title: "The Evolution of Formula 1 Aerodynamics",
-    excerpt: "A deep dive into how aerodynamic innovations have shaped Formula 1 racing over the decades.",
-    content: `
-      <p class="lead">For decades, aerodynamic development has been at the forefront of Formula 1 innovation, reshaping how race cars perform on the track.</p>
+// Default placeholder image if blog post has no image
+const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1617196701537-7329482cc9fe";
+const DEFAULT_AUTHOR_IMAGE = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e";
+
+// Function to convert markdown to HTML
+const convertMarkdownToHtml = (markdown: string): string => {
+  if (!markdown) return '';
+  
+  // First, split the content by lines to properly handle headings
+  const lines = markdown.split('\n');
+  let processedLines = [];
+  
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+    
+    // Process headings with proper spacing
+    if (line.startsWith('## ')) {
+      const headingText = line.substring(3).trim();
+      processedLines.push(`<h2 class="blog-heading-h2">${headingText}</h2>`);
+    } 
+    else if (line.startsWith('### ')) {
+      const headingText = line.substring(4).trim();
+      processedLines.push(`<h3 class="blog-heading-h3">${headingText}</h3>`);
+    }
+    else {
+      // Process other formatting
+      line = line
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>');
       
-      <p>When Formula 1 began in 1950, cars were essentially bullet-shaped with minimal consideration for downforce. Drivers relied primarily on mechanical grip from their tires. By the late 1960s, teams began experimenting with wings to push cars into the track, increasing cornering speeds dramatically.</p>
-      
-      <h2>The Ground Effect Era</h2>
-      
-      <p>The late 1970s saw Lotus pioneer "ground effect" aerodynamics, using the car's floor shape to create a vacuum that sucked the car to the track. This technological leap produced unprecedented cornering speeds, though it was eventually banned due to safety concerns when cars lost downforce suddenly over bumps or kerbs.</p>
-      
-      <p>Through the 1980s and 1990s, teams focused on intricate front and rear wing designs, introducing multiple elements that could be fine-tuned for different circuit requirements. The introduction of computational fluid dynamics (CFD) technology allowed engineers to model airflow without physical testing.</p>
-      
-      <h2>The Modern Era</h2>
-      
-      <p>Today's Formula 1 cars generate around 5 times their weight in downforce at high speeds. The 2022 regulations introduced a significant shift toward "ground effect" once again, but with safer implementation through venturi tunnels under the car. This change was designed to reduce "dirty air" behind cars, allowing for closer racing and more overtaking opportunities.</p>
-      
-      <p>Teams now employ hundreds of aerodynamicists who work with wind tunnels and sophisticated CFD simulations to find fractions of a second in lap time through better airflow management. Every surface of a modern F1 car—from the front wing to the floor to the cooling ducts—is meticulously designed to control airflow in the most advantageous way possible.</p>
-      
-      <h2>The Future of F1 Aerodynamics</h2>
-      
-      <p>As Formula 1 pushes toward more sustainable racing, aerodynamic efficiency becomes even more crucial. Future regulations will likely continue to balance the competing demands of spectacular performance, close racing, and environmental responsibility, with aerodynamics remaining at the heart of car development.</p>
-    `,
-    author: "Michael Reynolds",
-    authorTitle: "Former F1 Aerodynamicist",
-    authorImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e",
-    date: "May 3, 2025",
-    category: "Technology",
-    image: "https://images.unsplash.com/photo-1617196701537-7329482cc9fe",
-    readingTime: "8 min read"
-  },
-  {
-    id: 2,
-    slug: "mastering-the-track-tips-from-professionals",
-    title: "Mastering the Track: Tips from Professional Race Drivers",
-    excerpt: "Professional drivers share their secrets for optimizing performance on any racing circuit.",
-    content: `
-      <p class="lead">Whether you're an amateur enthusiast or aiming for a professional career, these insights from top racing drivers can help you improve your track performance.</p>
-      
-      <h2>Perfect Your Racing Line</h2>
-      <p>Professional drivers unanimously highlight the racing line as the foundation of fast track driving. "The perfect line through a corner is rarely what beginners think," explains three-time champion Alex Morris. "It's about maximizing exit speed on corners leading to long straights, and sometimes sacrificing entry speed for a better exit."</p>
-      
-      <p>Professionals recommend walking the track before racing whenever possible, noting reference points for braking, turn-in, apex, and track-out positions.</p>
-      
-      <h2>Brake Once, Brake Hard</h2>
-      <p>Efficient braking can make or break your lap time. "Progressive braking is a myth in modern racing," says touring car champion Sophia Chen. "You want to hit peak braking force quickly and then gradually release as you approach the turn-in point." This technique, known as "trail braking," helps rotate the car into corners while maintaining stability.</p>
-      
-      <h2>Look Where You Want to Go</h2>
-      <p>Vision is perhaps the most underrated skill in motorsports. "Your hands follow your eyes," explains rally champion James Wilson. "If you're looking at the wall, that's where you'll end up. Always focus your sight far ahead, where you want the car to go." Professional drivers typically look 2-3 turns ahead, processing information far in advance.</p>
-      
-      <h2>Master Throttle Control</h2>
-      <p>The gas pedal should be treated like a dimmer switch, not an on/off button. Smooth, progressive throttle application prevents wheelspin and maintains balance. "Finding the exact limit of grip requires thousands of hours of practice," notes sports car champion Emma Clarke. "But when you get it right, you're extracting every bit of performance from the car."</p>
-      
-      <h2>Mental Preparation</h2>
-      <p>Top-level racing is as much mental as physical. Many professional drivers use visualization techniques, mentally driving perfect laps before getting in the car. Others use simulators extensively to build muscle memory and track familiarity. "The calmest driver is usually the fastest," says David Martinez, Formula 3 winner. "Racing requires absolute focus and emotional control."</p>
-    `,
-    author: "Sophia Chen",
-    authorTitle: "Racing Instructor",
-    authorImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330",
-    date: "April 28, 2025",
-    category: "Driving Tips",
-    image: "https://images.unsplash.com/photo-1516546453174-5e1098a4b4af",
-    readingTime: "6 min read"
+      // Add the processed line
+      processedLines.push(line);
+    }
   }
-];
+  
+  // Join lines back together with proper spacing
+  let html = processedLines.join('<br>');
+  
+  // Handle image placeholders if any remain
+  html = html.replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" class="my-4 rounded-md">');
+  
+  return html;
+};
 
 const BlogArticle = () => {
-  const { slug } = useParams();
-  const article = blogArticles.find(article => article.slug === slug);
-  
+  const { slug } = useParams<{ slug: string }>();
+  const [article, setArticle] = useState<BlogPost | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
+
+  useEffect(() => {
+    const fetchArticle = async () => {
+      setIsLoading(true);
+
+      if (!slug) {
+        setIsLoading(false);
+        return;
+      }
+
+      // Fetch the article with the matching slug
+      const { data, error } = await supabase
+        .from('blog_articles')
+        .select('*')
+        .eq('slug', slug)
+        .eq('published', true)
+        .single();
+
+      if (error || !data) {
+        console.error('Error fetching article:', error);
+        setIsLoading(false);
+        return;
+      }
+
+      // Map the data to match the BlogPost type
+      const formattedPost: BlogPost = {
+        id: data.id,
+        title: data.title,
+        slug: data.slug || data.id,
+        excerpt: data.excerpt,
+        content: data.content,
+        image_url: data.featured_image || DEFAULT_IMAGE,
+        featured_image: data.featured_image,
+        published: data.published,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        author_id: data.author_id,
+        category_id: data.category_id,
+        published_at: data.published_at
+      };
+
+      setArticle(formattedPost);
+
+      // Fetch related posts (excluding the current one)
+      const { data: relatedData, error: relatedError } = await supabase
+        .from('blog_articles')
+        .select('*')
+        .eq('published', true)
+        .neq('id', data.id)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (!relatedError && relatedData) {
+        const formattedRelated: BlogPost[] = relatedData.map(post => ({
+          id: post.id,
+          title: post.title,
+          slug: post.slug || post.id,
+          excerpt: post.excerpt,
+          content: post.content,
+          image_url: post.featured_image || DEFAULT_IMAGE,
+          featured_image: post.featured_image,
+          published: post.published,
+          created_at: post.created_at,
+          updated_at: post.updated_at,
+          author_id: post.author_id,
+          category_id: post.category_id,
+          published_at: post.published_at
+        }));
+
+        setRelatedPosts(formattedRelated);
+      }
+
+      setIsLoading(false);
+    };
+
+    fetchArticle();
+  }, [slug]);
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-grow flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-lg">Loading article...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // If article not found, show error message
   if (!article) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
-        <main className="flex-grow container mx-auto px-4 py-12">
+        <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-3xl font-bold mb-4">Article Not Found</h1>
             <p className="mb-6">The article you're looking for doesn't exist or may have been moved.</p>
@@ -107,20 +178,20 @@ const BlogArticle = () => {
         {/* Hero image */}
         <div className="w-full h-[40vh] relative">
           <img 
-            src={article.image} 
+            src={article.image_url || DEFAULT_IMAGE} 
             alt={article.title} 
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-70"></div>
           <div className="absolute bottom-0 container mx-auto px-4 py-6 text-white">
             <span className="bg-racecar-red px-3 py-1 rounded-md text-sm font-medium mb-2 inline-block">
-              {article.category}
+              Racing
             </span>
             <h1 className="text-4xl md:text-5xl font-bold mb-2">{article.title}</h1>
             <div className="flex items-center gap-4 text-sm md:text-base">
-              <span>{article.date}</span>
+              <span>{format(new Date(article.created_at), 'MMMM d, yyyy')}</span>
               <span>•</span>
-              <span>{article.readingTime}</span>
+              <span>{Math.ceil(article.content.length / 1000)} min read</span>
             </div>
           </div>
         </div>
@@ -136,8 +207,8 @@ const BlogArticle = () => {
             {/* Main content */}
             <div className="lg:col-span-2">
               <div 
-                className="prose prose-lg max-w-none"
-                dangerouslySetInnerHTML={{ __html: article.content }}
+                className="prose prose-lg max-w-none blog-content"
+                dangerouslySetInnerHTML={{ __html: convertMarkdownToHtml(article.content) }}
               />
             </div>
             
@@ -147,17 +218,17 @@ const BlogArticle = () => {
               <div className="bg-gray-50 p-6 rounded-lg">
                 <div className="flex items-center mb-4">
                   <img 
-                    src={article.authorImage}
-                    alt={article.author}
+                    src={DEFAULT_AUTHOR_IMAGE}
+                    alt="Author"
                     className="w-16 h-16 rounded-full object-cover mr-4"
                   />
                   <div>
-                    <h3 className="font-bold text-lg">{article.author}</h3>
-                    <p className="text-gray-600">{article.authorTitle}</p>
+                    <h3 className="font-bold text-lg">Checkered Flag Finder</h3>
+                    <p className="text-gray-600">Racing Enthusiast</p>
                   </div>
                 </div>
                 <p className="text-gray-700">
-                  Expert in motorsports with over a decade of experience in professional racing and vehicle development.
+                  Expert in motorsports with a passion for racing and automotive excellence.
                 </p>
               </div>
               
@@ -165,21 +236,25 @@ const BlogArticle = () => {
               <div>
                 <h3 className="text-xl font-bold mb-4">Related Articles</h3>
                 <div className="space-y-4">
-                  {blogArticles.filter(a => a.id !== article.id).map(related => (
-                    <Link to={`/blog/${related.slug}`} key={related.id} className="block">
-                      <div className="flex gap-3">
-                        <img 
-                          src={related.image} 
-                          alt={related.title}
-                          className="w-24 h-24 object-cover rounded-md"
-                        />
-                        <div>
-                          <h4 className="font-bold hover:text-racecar-red transition-colors">{related.title}</h4>
-                          <p className="text-sm text-gray-600">{related.date}</p>
+                  {relatedPosts.length > 0 ? (
+                    relatedPosts.map(related => (
+                      <Link to={`/blog/${related.slug}`} key={related.id} className="block">
+                        <div className="flex gap-3">
+                          <img 
+                            src={related.image_url || DEFAULT_IMAGE} 
+                            alt={related.title}
+                            className="w-24 h-24 object-cover rounded-md"
+                          />
+                          <div>
+                            <h4 className="font-bold hover:text-racecar-red transition-colors">{related.title}</h4>
+                            <p className="text-sm text-gray-600">{format(new Date(related.created_at), 'MMMM d, yyyy')}</p>
+                          </div>
                         </div>
-                      </div>
-                    </Link>
-                  ))}
+                      </Link>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No related articles found.</p>
+                  )}
                 </div>
               </div>
             </div>

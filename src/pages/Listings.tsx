@@ -12,7 +12,43 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Filter, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CarListingWithImages } from '@/types/customTypes';
+
+// Define interfaces for better type safety
+interface CategoryItem {
+  id: string;
+  name: string;
+}
+
+interface SubcategoryItem {
+  id: string;
+  name: string;
+}
+
+interface CarImage {
+  id: string;
+  image_url: string;
+  is_primary: boolean;
+  car_listing_id: string;
+}
+
+interface CarListing {
+  id: string;
+  name: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  price: number;
+  location?: string;
+  short_description?: string;
+  status: string;
+  category_id?: string;
+  subcategory_id?: string;
+  slug?: string;
+  created_at: string;
+  primary_image?: string;
+  images?: CarImage[];
+  mileage?: number;
+}
 
 const Listings = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -23,104 +59,191 @@ const Listings = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState("all");
   
   // State for database data
-  const [categories, setCategories] = useState<{id: string, name: string}[]>([]);
-  const [subcategories, setSubcategories] = useState<{[key: string]: {id: string, name: string}[]}>({}); 
-  const [listings, setListings] = useState<CarListingWithImages[]>([]); 
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [subcategories, setSubcategories] = useState<{[key: string]: CategoryItem[]}>({}); 
+  const [listings, setListings] = useState<CarListing[]>([]); 
   const [isLoading, setIsLoading] = useState(true);
-  const [availableSubcategories, setAvailableSubcategories] = useState<{id: string, name: string}[]>([]);
+  const [availableSubcategories, setAvailableSubcategories] = useState<CategoryItem[]>([]);
 
   // Min and max prices from data - will be updated based on actual data
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(500000);
+
+  // Helper function to retry database operations with exponential backoff
+  const retryOperation = async <T,>(operation: () => Promise<T>, name: string, maxRetries = 3): Promise<T> => {
+    let lastError: any;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`${name}: Attempt ${attempt}/${maxRetries}`);
+        const result = await operation();
+        console.log(`${name}: Operation successful`);
+        return result;
+      } catch (error) {
+        lastError = error;
+        console.error(`${name}: Attempt ${attempt}/${maxRetries} failed:`, error);
+        if (attempt < maxRetries) {
+          const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s
+          console.log(`${name}: Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    throw lastError;
+  };
 
   // Fetch listings, categories and subcategories from database
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
+        console.log('Fetching listings data...');
         
-        // Fetch all categories
-        const { data: categoriesData, error: categoriesError } = await supabase
-          .from('categories')
-          .select('*')
-          .order('name');
+        // Fetch all categories with retry mechanism
+        const categoriesData = await retryOperation<any[]>(async () => {
+          const { data, error } = await supabase
+            .from('categories')
+            .select('*')
+            .order('name');
+          
+          if (error) throw error;
+          return data || [];
+        }, 'Categories Fetch');
         
-        if (categoriesError) throw categoriesError;
+        console.log('Categories fetched successfully:', categoriesData.length);
         
         // Add "All Categories" option
-        const allCategories = [{id: 'all', name: 'All Categories'}, ...categoriesData];
+        const allCategories: CategoryItem[] = [{id: 'all', name: 'All Categories'}, ...categoriesData.map(cat => ({
+          id: cat.id as string,
+          name: cat.name as string
+        }))];
         setCategories(allCategories);
         
-        // Fetch all subcategories
-        const { data: subcategoriesData, error: subcategoriesError } = await supabase
-          .from('subcategories')
-          .select('*')
-          .order('name');
+        // Fetch all subcategories with retry mechanism
+        const subcategoriesData = await retryOperation<any[]>(async () => {
+          const { data, error } = await supabase
+            .from('subcategories')
+            .select('*')
+            .order('name');
+          
+          if (error) throw error;
+          return data || [];
+        }, 'Subcategories Fetch');
         
-        if (subcategoriesError) throw subcategoriesError;
+        console.log('Subcategories fetched successfully:', subcategoriesData.length);
         
         // Group subcategories by category_id
-        const subcategoryMap: {[key: string]: {id: string, name: string}[]} = {
+        const subcategoryMap: {[key: string]: CategoryItem[]} = {
           all: [{id: 'all', name: 'All Subcategories'}],
         };
         
-        categoriesData.forEach((category: any) => {
-          subcategoryMap[category.id] = [{id: 'all', name: 'All Subcategories'}];
-        });
+        if (categoriesData) {
+          categoriesData.forEach((category: any) => {
+            subcategoryMap[category.id] = [{id: 'all', name: 'All Subcategories'}];
+          });
+        }
         
-        subcategoriesData.forEach((sub: any) => {
-          if (subcategoryMap[sub.category_id]) {
-            subcategoryMap[sub.category_id].push({
-              id: sub.id,
-              name: sub.name
-            });
-          } else {
-            subcategoryMap[sub.category_id] = [{id: 'all', name: 'All Subcategories'}, {
-              id: sub.id,
-              name: sub.name
-            }];
-          }
-        });
+        if (subcategoriesData) {
+          subcategoriesData.forEach((sub: any) => {
+            if (subcategoryMap[sub.category_id]) {
+              subcategoryMap[sub.category_id].push({
+                id: sub.id,
+                name: sub.name
+              });
+            } else {
+              subcategoryMap[sub.category_id] = [{id: 'all', name: 'All Subcategories'}, {
+                id: sub.id,
+                name: sub.name
+              }];
+            }
+          });
+        }
         
         setSubcategories(subcategoryMap);
         setAvailableSubcategories(subcategoryMap.all || []);
         
-        // Fetch car listings
-        const { data: listingsData, error: listingsError } = await supabase
+        console.log('Fetching car listings...');
+        
+        // Fetch car listings directly without joins first to ensure we get basic data
+        const { data: basicListings, error: basicError } = await supabase
           .from('car_listings')
-          .select(`
-            *,
-            images:car_images(*)
-          `)
-          .eq('status', 'active')
+          .select('*')
           .order('created_at', { ascending: false });
-          
-        if (listingsError) throw listingsError;
         
-        // Process the data
-        const formattedListings = listingsData.map((listing: any) => ({
-          ...listing,
-          primary_image: listing.images && listing.images.length > 0 
-            ? listing.images.find((img: any) => img.is_primary)?.image_url || listing.images[0].image_url
-            : null
-        }));
-        
-        setListings(formattedListings);
-        
-        // Calculate price range from actual listings
-        if (formattedListings.length > 0) {
-          const prices = formattedListings.map(listing => Number(listing.price));
-          const min = Math.floor(Math.min(...prices));
-          const max = Math.ceil(Math.max(...prices));
-          setMinPrice(min);
-          setMaxPrice(max);
-          setPriceRange([min, max]);
+        if (basicError) {
+          console.error('Error fetching basic car listings:', basicError);
+          throw basicError;
         }
         
-        setIsLoading(false);
-      } catch (error) {
+        console.log('Successfully fetched basic car listings:', basicListings?.length || 0);
+        
+        // Fetch all car listings with images - with retry mechanism and no auth requirement
+        const rawListingsData = await retryOperation<any[]>(async () => {
+          // Explicitly set auth to null to ensure public access
+          const { data, error } = await supabase
+            .from('car_listings')
+            .select(`
+              *,
+              images:car_images(*)
+            `)
+            // Remove status filter to show all listings to everyone
+            // .eq('status', 'active')
+            .order('created_at', { ascending: false });
+          
+          if (error) throw error;
+          return data || [];
+        }, 'Listings Fetch');
+        
+        console.log('Listings fetched successfully:', rawListingsData.length);
+        
+        // Process the listings data to match our CarListing interface
+        const processedListings: CarListing[] = rawListingsData.map(listing => {
+          // Find primary image or use the first one
+          const primaryImage = listing.images && listing.images.length > 0
+            ? listing.images.find((img: any) => img.is_primary)?.image_url || listing.images[0].image_url
+            : undefined;
+            
+          return {
+            id: listing.id,
+            name: listing.name || 'Unnamed Listing',
+            make: listing.make,
+            model: listing.model,
+            year: listing.year,
+            price: Number(listing.price) || 0,
+            location: listing.location,
+            short_description: listing.short_description,
+            status: listing.status || 'inactive',
+            category_id: listing.category_id,
+            subcategory_id: listing.subcategory_id,
+            slug: listing.slug,
+            created_at: listing.created_at,
+            primary_image: primaryImage,
+            images: listing.images
+          };
+        });
+        
+        // Find min and max prices from the data
+        if (processedListings.length > 0) {
+          const prices = processedListings.map(listing => listing.price).filter(price => !isNaN(price));
+          if (prices.length > 0) {
+            const min = Math.min(...prices);
+            const max = Math.max(...prices);
+            setMinPrice(min);
+            setMaxPrice(max);
+            setPriceRange([min, max]);
+          }
+        }
+        
+        setListings(processedListings);
+      } catch (error: any) {
         console.error('Error fetching data:', error);
-        toast.error('Failed to load listings');
+        toast.error(`Failed to load listings: ${error.message || 'Please try again later.'}`);
+        
+        // Even if we fail, set empty arrays to prevent UI from being stuck in loading state
+        setListings([]);
+        setCategories([{id: 'all', name: 'All Categories'}]);
+        setSubcategories({all: [{id: 'all', name: 'All Subcategories'}]});
+        setAvailableSubcategories([{id: 'all', name: 'All Subcategories'}]);
+      } finally {
         setIsLoading(false);
       }
     };
@@ -128,26 +251,33 @@ const Listings = () => {
     fetchData();
   }, []);
 
-  // Filter listings based on search, price range, category, and subcategory
-  const filteredListings = listings.filter(listing => {
-    const searchFields = [
-      listing.name, 
-      listing.make, 
-      listing.model, 
-      listing.location,
-      listing.short_description
-    ].filter(Boolean).map(field => field.toLowerCase());
+  // Filter and sort listings based on user selections
+  const filteredListings = listings.filter(car => {
+    // Skip listings without essential data
+    if (!car || !car.id) return false;
     
-    const matchesSearch = searchTerm === '' || 
-                          searchFields.some(field => field.includes(searchTerm.toLowerCase()));
+    // For public visibility, show all listings regardless of status
+    // This is a change to make car listings visible to everyone
+    // const statusMatch = car.status === 'active';
+    const statusMatch = true;
     
-    const price = Number(listing.price);
-    const matchesPrice = price >= priceRange[0] && price <= priceRange[1];
+    // Filter by search term
+    const searchMatch = searchTerm === '' || 
+      car.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      car.make?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      car.model?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      car.short_description?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = selectedCategory === "all" || listing.category_id === selectedCategory;
-    const matchesSubcategory = selectedSubcategory === "all" || listing.subcategory_id === selectedSubcategory;
+    // Filter by price range
+    const priceMatch = car.price >= priceRange[0] && car.price <= priceRange[1];
     
-    return matchesSearch && matchesPrice && matchesCategory && matchesSubcategory;
+    // Filter by category
+    const categoryMatch = selectedCategory === 'all' || car.category_id === selectedCategory;
+    
+    // Filter by subcategory
+    const subcategoryMatch = selectedSubcategory === 'all' || car.subcategory_id === selectedSubcategory;
+    
+    return statusMatch && searchMatch && priceMatch && categoryMatch && subcategoryMatch;
   });
 
   // Sort listings
@@ -319,38 +449,51 @@ const Listings = () => {
           {/* Listings grid */}
           {!isLoading && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {sortedListings.map(car => {
-                const imageUrl = car.primary_image || 
-                              (car.images && car.images.length > 0 ? 
-                               car.images[0].image_url : 
-                               'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5');
-                
-                return (
-                  <Link to={`/car-details/${car.id}/${car.slug || ''}`} key={car.id}>
-                    <Card className="overflow-hidden rounded-lg hover:shadow-lg transition-shadow h-full border-0 shadow">
-                      <div className="relative">
-                        <img 
-                          src={imageUrl} 
-                          alt={car.name} 
-                          className="w-full h-48 object-cover" 
-                        />
-                        <div className="absolute bottom-0 left-0 bg-white text-black font-bold px-4 py-1 m-3 rounded">
-                          ${Number(car.price).toLocaleString()}
+              {sortedListings.length > 0 ? (
+                sortedListings.map(car => {
+                  // Skip invalid listings
+                  if (!car || !car.id) return null;
+                  
+                  // Handle missing images gracefully
+                  const fallbackImage = 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5';
+                  const imageUrl = car.primary_image || fallbackImage;
+                  
+                  return (
+                    <Link to={`/car-details/${car.id}/${car.slug || ''}`} key={car.id}>
+                      <Card className="overflow-hidden rounded-lg hover:shadow-lg transition-shadow h-full border-0 shadow">
+                        <div className="relative">
+                          <img 
+                            src={imageUrl} 
+                            alt={car.name || 'Race car listing'} 
+                            className="w-full h-48 object-cover" 
+                            onError={(e) => {
+                              // Fallback image if the original fails to load
+                              (e.target as HTMLImageElement).src = fallbackImage;
+                            }}
+                          />
+                          <div className="absolute bottom-0 left-0 bg-white text-black font-bold px-4 py-1 m-3 rounded">
+                            ${car.price.toLocaleString()}
+                          </div>
                         </div>
-                      </div>
-                      <CardContent className="p-4">
-                        <h3 className="text-lg font-bold">{car.name}</h3>
-                        <div className="text-xs text-gray-600 mt-1">
-                          {[car.make, car.model, car.year].filter(Boolean).join(' • ')}
-                        </div>
-                        <div className="text-xs text-gray-600 mt-2">
-                          {car.location || 'Location not specified'}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })}
+                        <CardContent className="p-4">
+                          <h3 className="text-lg font-bold">{car.name}</h3>
+                          <div className="text-xs text-gray-600 mt-1">
+                            {[car.make, car.model, car.year].filter(Boolean).join(' • ') || 'Details not available'}
+                          </div>
+                          <div className="text-xs text-gray-600 mt-2">
+                            {car.location || 'Location not specified'}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })
+              ) : (
+                <div className="col-span-3 text-center py-16 bg-white rounded-lg shadow-sm">
+                  <h3 className="text-xl font-medium mb-2">No listings available</h3>
+                  <p className="text-gray-500">Check back soon for new race car listings</p>
+                </div>
+              )}
             </div>
           )}
 

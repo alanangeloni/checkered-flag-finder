@@ -11,9 +11,10 @@ import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
-import { UploadCloud, X, Bold, Italic, Heading2, Heading3, Link, Image as ImageIcon } from 'lucide-react';
+import { UploadCloud, X, Image as ImageIcon } from 'lucide-react';
 import { BlogPost } from '@/types/customTypes';
 import { v4 as uuidv4 } from 'uuid';
+import RichTextEditor from './RichTextEditor';
 
 // Form schema for blog post
 const blogPostSchema = z.object({
@@ -131,49 +132,10 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
     }
   };
 
+  // This function is no longer needed as the rich text editor handles formatting
   const insertFormat = (format: string) => {
-    if (!contentTextareaRef.current) return;
-    
-    const start = contentTextareaRef.current.selectionStart;
-    const end = contentTextareaRef.current.selectionEnd;
-    const content = form.getValues('content');
-    let newContent = content;
-    let newCursorPos = start;
-    
-    const selectedText = content.substring(start, end);
-    
-    switch (format) {
-      case 'bold':
-        newContent = content.substring(0, start) + `**${selectedText}**` + content.substring(end);
-        newCursorPos = start + 2 + selectedText.length;
-        break;
-      case 'italic':
-        newContent = content.substring(0, start) + `*${selectedText}*` + content.substring(end);
-        newCursorPos = start + 1 + selectedText.length;
-        break;
-      case 'h2':
-        newContent = content.substring(0, start) + `\n## ${selectedText}\n` + content.substring(end);
-        newCursorPos = start + 4 + selectedText.length;
-        break;
-      case 'h3':
-        newContent = content.substring(0, start) + `\n### ${selectedText}\n` + content.substring(end);
-        newCursorPos = start + 5 + selectedText.length;
-        break;
-      case 'link':
-        newContent = content.substring(0, start) + `[${selectedText}](url)` + content.substring(end);
-        newCursorPos = start + selectedText.length + 3;
-        break;
-    }
-    
-    form.setValue('content', newContent);
-    
-    // Set focus back to textarea
-    setTimeout(() => {
-      if (contentTextareaRef.current) {
-        contentTextareaRef.current.focus();
-        contentTextareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
-      }
-    }, 0);
+    // Kept for backward compatibility but functionality moved to RichTextEditor
+    console.log('Format requested:', format);
   };
 
   const generateSlug = (title: string): string => {
@@ -394,88 +356,28 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
             <FormItem>
               <FormLabel>Content</FormLabel>
               <div className="space-y-2">
-                <div className="flex flex-wrap gap-2 p-2 bg-gray-100 rounded-t-md border border-b-0 border-gray-300">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => insertFormat('h2')}
-                    title="Heading 2"
-                  >
-                    <Heading2 size={16} />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => insertFormat('h3')}
-                    title="Heading 3"
-                  >
-                    <Heading3 size={16} />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => insertFormat('bold')}
-                    title="Bold"
-                  >
-                    <Bold size={16} />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => insertFormat('italic')}
-                    title="Italic"
-                  >
-                    <Italic size={16} />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => insertFormat('link')}
-                    title="Insert Link"
-                  >
-                    <Link size={16} />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    title="Insert Image"
-                  >
-                    <label htmlFor="content-image" className="cursor-pointer flex items-center">
-                      <ImageIcon size={16} />
-                    </label>
-                    <Input
-                      id="content-image"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleContentImageUpload}
-                    />
-                  </Button>
-                </div>
-
                 <FormControl>
-                  <Textarea 
-                    placeholder="Write your blog post content here. Use the formatting toolbar above to add headings, bold, italic, links and images."
-                    className="min-h-[300px] font-mono rounded-t-none"
-                    rows={12}
-                    onFocus={saveContentCursorPosition}
-                    onClick={saveContentCursorPosition}
-                    onKeyUp={saveContentCursorPosition}
-                    ref={(e) => {
-                      field.ref(e);
-                      contentTextareaRef.current = e;
-                    }}
-                    {...field}
+                  <RichTextEditor 
                     value={field.value}
-                    onChange={(e) => {
-                      field.onChange(e);
-                      saveContentCursorPosition();
+                    onChange={(value) => {
+                      field.onChange(value);
+                    }}
+                    onImageUploadRequest={() => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = 'image/*';
+                      input.onchange = (e) => {
+                        // Create a synthetic event that matches what handleContentImageUpload expects
+                        const files = (e.target as HTMLInputElement).files;
+                        if (files && files.length > 0) {
+                          const syntheticEvent = {
+                            target: { files, value: '' },
+                            preventDefault: () => {}
+                          } as unknown as React.ChangeEvent<HTMLInputElement>;
+                          handleContentImageUpload(syntheticEvent);
+                        }
+                      };
+                      input.click();
                     }}
                   />
                 </FormControl>

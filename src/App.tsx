@@ -17,6 +17,7 @@ import Profile from "./pages/Profile";
 import Messages from "./pages/Messages";
 import BlogManager from "./pages/BlogManager";
 import EditListing from "./pages/EditListing";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +40,7 @@ const App = () => (
           <Route path="/profile" element={<Profile />} />
           <Route path="/messages/:id" element={<Messages />} />
           <Route path="/blog-manager" element={<BlogManager />} />
+          <Route path="/admin" element={<AdminDashboard />} />
           {/* Legacy route for backward compatibility */}
           <Route path="/car-details/:id/:slug" element={<CarDetails />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
