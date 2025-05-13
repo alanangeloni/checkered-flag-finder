@@ -104,25 +104,15 @@ export const useListCarForm = () => {
     });
   };
 
-  const onSubmit = async (values: ListCarFormValues) => {
+  // Function to create car listing and handle image uploads
+  const createCarListingWithImages = async (values: ListCarFormValues, userId: string) => {
     try {
-      setIsSubmitting(true);
-      console.log("Starting submission...");
-
-      // Check if the user is logged in
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('You must be logged in to list a car');
-        navigate('/login');
-        return;
-      }
-
       // Generate a slug for the car listing
       const carSlug = values.name.toLowerCase()
         .replace(/[^\w\s]/gi, '')
         .replace(/\s+/g, '-');
 
-      // Ensure category ID is a proper UUID if provided
+      // Normalize data for insertion
       let categoryId = null;
       if (values.categoryId && values.categoryId !== '' && values.categoryId !== '1') {
         categoryId = values.categoryId;
@@ -135,7 +125,7 @@ export const useListCarForm = () => {
 
       console.log("Creating car listing...");
       
-      // Create the car listing
+      // Step 1: Create the car listing first
       const { data: carListing, error: carError } = await supabase
         .from('car_listings')
         .insert({
@@ -149,7 +139,7 @@ export const useListCarForm = () => {
           short_description: values.shortDescription,
           detailed_description: values.detailedDescription || null,
           location: values.location || null,
-          user_id: session.user.id,
+          user_id: userId,
           engine_hours: values.engineHours ? parseInt(values.engineHours) : null,
           engine_specs: values.engineSpecs || null,
           race_car_type: values.raceCarType || null,
@@ -167,13 +157,20 @@ export const useListCarForm = () => {
 
       if (carError) {
         console.error('Error creating listing:', carError);
-        throw carError;
+        throw new Error(`Failed to create car listing: ${carError.message}`);
+      }
+
+      if (!carListing) {
+        throw new Error('Car listing was created but no data was returned');
       }
 
       console.log("Car listing created:", carListing);
 
-      // Handle image uploads
-      if (imageFiles.length > 0 && carListing) {
+      // Step 2: Upload images and create image records
+      const uploadedImages = [];
+      const failedImages = [];
+
+      if (imageFiles.length > 0) {
         console.log(`Uploading ${imageFiles.length} images...`);
         
         for (let i = 0; i < imageFiles.length; i++) {
@@ -183,18 +180,18 @@ export const useListCarForm = () => {
             // Generate unique filename
             const fileExt = file.name.split('.').pop();
             const fileName = `${uuidv4()}.${fileExt}`;
-            const filePath = `${session.user.id}/${carListing.id}/${fileName}`;
+            const filePath = `${userId}/${carListing.id}/${fileName}`;
             
             console.log(`Uploading image ${i + 1}/${imageFiles.length}: ${filePath}`);
             
             // Upload the file to storage
-            const { error: uploadError, data: uploadData } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
               .from('car-images')
               .upload(filePath, file);
             
             if (uploadError) {
               console.error(`Error uploading image ${i}:`, uploadError);
-              toast.error(`Failed to upload image ${i + 1}: ${uploadError.message}`);
+              failedImages.push({ file: file.name, error: uploadError.message });
               continue;
             }
             
@@ -205,33 +202,110 @@ export const useListCarForm = () => {
             
             if (!publicURLData || !publicURLData.publicUrl) {
               console.error(`Failed to get public URL for image ${i}`);
+              failedImages.push({ file: file.name, error: 'Failed to get public URL' });
               continue;
             }
             
             console.log(`Image ${i + 1} uploaded, URL:`, publicURLData.publicUrl);
             
-            // Add image record to car_images table
-            const { error: imageRecordError } = await supabase
+            // Add image record to car_images table with is_primary true for first image only
+            const isPrimary = i === 0;
+            const { data: imageRecord, error: imageRecordError } = await supabase
               .from('car_images')
               .insert({
                 car_id: carListing.id,
                 image_url: publicURLData.publicUrl,
-                is_primary: i === 0 // First image is primary
-              });
+                is_primary: isPrimary
+              })
+              .select()
+              .single();
             
             if (imageRecordError) {
               console.error(`Error creating image record ${i}:`, imageRecordError);
-              toast.error(`Failed to save image ${i + 1} to database: ${imageRecordError.message}`);
+              failedImages.push({ file: file.name, error: imageRecordError.message });
+            } else if (imageRecord) {
+              uploadedImages.push(imageRecord);
             }
-          } catch (err) {
+          } catch (err: any) {
             console.error(`Unexpected error with image ${i}:`, err);
-            toast.error(`Error processing image ${i + 1}`);
+            failedImages.push({ file: `Image ${i + 1}`, error: err.message || 'Unknown error' });
           }
         }
       }
+
+      // Step 3: Fetch the complete car listing with images
+      const { data: completeCarListing, error: fetchError } = await supabase
+        .from('car_listings')
+        .select(`
+          *,
+          images:car_images(*)
+        `)
+        .eq('id', carListing.id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching complete car listing:', fetchError);
+      }
+
+      // Handle any failed uploads
+      if (failedImages.length > 0) {
+        const failedCount = failedImages.length;
+        const successCount = uploadedImages.length;
+        
+        if (successCount > 0) {
+          toast.warning(
+            `${successCount} image(s) uploaded successfully, but ${failedCount} failed. Your listing was still created.`, 
+            { duration: 6000 }
+          );
+        } else {
+          toast.error(
+            `Failed to upload all ${failedCount} images, but your listing was still created.`, 
+            { duration: 6000 }
+          );
+        }
+        
+        console.error('Failed image uploads:', failedImages);
+      }
+
+      return { 
+        success: true, 
+        carListing: completeCarListing || carListing,
+        uploadedImages,
+        failedImages 
+      };
+    } catch (err: any) {
+      console.error('Error in createCarListingWithImages:', err);
+      throw err;
+    }
+  };
+
+  const onSubmit = async (values: ListCarFormValues) => {
+    try {
+      setIsSubmitting(true);
+      console.log("Starting submission...");
+
+      // Check if the user is logged in
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('You must be logged in to list a car');
+        navigate('/login');
+        return;
+      }
+
+      // Use the extraction function to create listing and upload images
+      const result = await createCarListingWithImages(values, session.user.id);
       
-      toast.success('Car listing created successfully!');
-      navigate(`/car-details/${carSlug}`);
+      if (result.success) {
+        const successMessage = result.failedImages.length > 0
+          ? `Car listing created with ${result.uploadedImages.length} images`
+          : 'Car listing created successfully!';
+          
+        toast.success(successMessage);
+        
+        // Navigate to the car details page
+        const slug = result.carListing.slug || result.carListing.id;
+        navigate(`/car-details/${slug}`);
+      }
     } catch (err: any) {
       console.error('Error creating listing:', err);
       toast.error(err.message || 'Failed to create listing');
@@ -250,6 +324,7 @@ export const useListCarForm = () => {
     removeImage,
     handleDragEnd,
     onSubmit,
+    createCarListingWithImages
   };
 };
 
