@@ -43,11 +43,15 @@ const CarDetails = () => {
         try {
           const { data, error } = await supabase
             .from('car_listings')
-            .select('id')
+            .select(`
+              *,
+              images:car_images(*)
+            `)
             .eq('slug', slug)
             .single();
           
           if (data && !error) {
+            console.log("Fetched car by slug:", data);
             window.location.href = `/car-details/${slug}`;
           }
         } catch (err) {

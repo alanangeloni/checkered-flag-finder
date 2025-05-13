@@ -188,7 +188,7 @@ export const useListCarForm = () => {
             console.log(`Uploading image ${i + 1}/${imageFiles.length}: ${filePath}`);
             
             // Upload the file to storage
-            const { error: uploadError } = await supabase.storage
+            const { error: uploadError, data: uploadData } = await supabase.storage
               .from('car-images')
               .upload(filePath, file);
             
@@ -221,7 +221,7 @@ export const useListCarForm = () => {
             
             if (imageRecordError) {
               console.error(`Error creating image record ${i}:`, imageRecordError);
-              toast.error(`Failed to save image ${i + 1} to database`);
+              toast.error(`Failed to save image ${i + 1} to database: ${imageRecordError.message}`);
             }
           } catch (err) {
             console.error(`Unexpected error with image ${i}:`, err);

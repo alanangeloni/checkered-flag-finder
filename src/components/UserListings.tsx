@@ -29,6 +29,7 @@ const UserListings = ({ userId }: UserListingsProps) => {
 
         if (error) throw error;
 
+        console.log('Fetched user listings with images:', data);
         setListings(data as CarListingWithImages[] || []);
       } catch (error: any) {
         console.error('Error fetching user listings:', error);
@@ -76,6 +77,10 @@ const UserListings = ({ userId }: UserListingsProps) => {
                   src={listing.images.find(img => img.is_primary)?.image_url || listing.images[0].image_url} 
                   alt={listing.name}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5';
+                    console.error('Image failed to load for listing:', listing.id);
+                  }}
                 />
               ) : (
                 <div className="w-full h-full bg-gray-200 flex items-center justify-center">
@@ -102,7 +107,7 @@ const UserListings = ({ userId }: UserListingsProps) => {
               <h4 className="font-semibold truncate">{listing.name}</h4>
               <p className="text-sm text-gray-500 mt-1 line-clamp-2">{listing.short_description}</p>
               <div className="flex flex-wrap justify-between gap-2 mt-3">
-                <Link to={`/car-details/${listing.id}/${listing.slug || ''}`}>
+                <Link to={`/car-details/${listing.slug || listing.id}`}>
                   <Button variant="outline" size="sm">View</Button>
                 </Link>
                 <Link to={`/edit-listing/${listing.id}`}>

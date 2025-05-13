@@ -6,20 +6,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { CarListingWithImages } from '@/types/customTypes';
 
 const CarListingCard = ({ listing, index }: { listing: CarListingWithImages; index: number }) => {
-  // Default image if none provided
-  const imageUrl = listing.primary_image || 
-                   (listing.images && listing.images.length > 0 ? 
-                    listing.images[0].image_url : 
-                    'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5');
+  // Get the primary image or first available image
+  const imageUrl = listing.images && listing.images.length > 0
+    ? listing.images.find(img => img.is_primary)?.image_url || listing.images[0].image_url
+    : 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5'; // Fallback image
   
   return (
-    <Link to={`/car-details/${listing.id}/${listing.slug || ''}`}>
+    <Link to={`/car-details/${listing.slug || listing.id}`}>
       <Card className="overflow-hidden hover:shadow-lg transition-shadow">
         <div className="relative">
           <img
             src={imageUrl}
             alt={listing.name}
             className="w-full h-44 object-cover"
+            onError={(e) => {
+              e.currentTarget.src = 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5';
+              console.error('Image failed to load:', imageUrl);
+            }}
           />
           <div className="absolute top-2 left-2 bg-white rounded px-3 py-1 font-bold">
             ${listing.price.toLocaleString()}
@@ -66,15 +69,8 @@ const RecentlyListedCars = () => {
           return;
         }
         
-        // Process the data to format primary images
-        const formattedListings = data.map((listing: any) => ({
-          ...listing,
-          primary_image: listing.images && listing.images.length > 0 
-            ? listing.images.find((img: any) => img.is_primary)?.image_url || listing.images[0].image_url
-            : null
-        }));
-        
-        setListings(formattedListings);
+        console.log('Fetched car listings with images:', data);
+        setListings(data as CarListingWithImages[] || []);
       } catch (err) {
         console.error('Error in fetching car listings:', err);
       } finally {
