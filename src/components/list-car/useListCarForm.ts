@@ -84,6 +84,10 @@ export const useListCarForm = () => {
       // Generate a slug for the car listing
       const carSlug = values.name.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, '-');
 
+      // Handle category and subcategory IDs - ensure they are valid UUIDs or null
+      const categoryId = values.categoryId && values.categoryId !== '1' ? values.categoryId : null;
+      const subcategoryId = values.subcategoryId && values.subcategoryId !== '' ? values.subcategoryId : null;
+
       // Create the car listing
       const { data: carListing, error: carError } = await supabase
         .from('car_listings')
@@ -92,8 +96,8 @@ export const useListCarForm = () => {
           make: values.make,
           model: values.model,
           year: values.year ? parseInt(values.year) : null,
-          category_id: values.categoryId,
-          subcategory_id: values.subcategoryId || null, // Ensure it's null if empty
+          category_id: categoryId,
+          subcategory_id: subcategoryId,
           price: values.price ? parseFloat(values.price) : 0,
           short_description: values.shortDescription,
           detailed_description: values.detailedDescription,
@@ -118,11 +122,47 @@ export const useListCarForm = () => {
 
       // Handle image uploads if needed
       if (imageFiles.length > 0 && carListing) {
+        // Process uploads for each image
+        for (let i = 0; i < imageFiles.length; i++) {
+          const file = imageFiles[i];
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${uuidv4()}.${fileExt}`;
+          const filePath = `${session.user.id}/${carListing.id}/${fileName}`;
+          
+          // Upload the file to storage
+          const { error: uploadError } = await supabase.storage
+            .from('car-images')
+            .upload(filePath, file);
+          
+          if (uploadError) {
+            console.error('Error uploading image:', uploadError);
+            continue; // Continue with other uploads if one fails
+          }
+          
+          // Get the public URL
+          const { data: publicURL } = supabase.storage
+            .from('car-images')
+            .getPublicUrl(filePath);
+          
+          // Add image record to car_images table
+          const { error: imageRecordError } = await supabase
+            .from('car_images')
+            .insert({
+              car_id: carListing.id,
+              image_url: publicURL.publicUrl,
+              is_primary: i === 0 // First image is primary
+            });
+          
+          if (imageRecordError) {
+            console.error('Error creating image record:', imageRecordError);
+          }
+        }
+        
         toast.success('Car listing created successfully!');
-        navigate(`/car-details/${carListing.id}/${carSlug}`);
+        navigate(`/car-details/${carListing.id}/${carListing.slug}`);
       } else {
         toast.success('Car listing created successfully!');
-        navigate(`/car-details/${carListing.id}/${carSlug}`);
+        navigate(`/car-details/${carListing.id}/${carListing.slug}`);
       }
     } catch (err: any) {
       console.error('Error creating listing:', err);
