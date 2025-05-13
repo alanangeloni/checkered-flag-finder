@@ -188,7 +188,7 @@ export const useListCarForm = () => {
             console.log(`Uploading image ${i + 1}/${imageFiles.length}: ${filePath}`);
             
             // Upload the file to storage
-            const { error: uploadError, data: uploadData } = await supabase.storage
+            const { error: uploadError } = await supabase.storage
               .from('car-images')
               .upload(filePath, file);
             
