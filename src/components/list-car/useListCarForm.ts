@@ -122,7 +122,7 @@ export const useListCarForm = () => {
         .replace(/[^\w\s]/gi, '')
         .replace(/\s+/g, '-');
 
-      // Handle category and subcategory IDs
+      // Ensure category ID is a proper UUID if provided
       let categoryId = null;
       if (values.categoryId && values.categoryId !== '' && values.categoryId !== '1') {
         categoryId = values.categoryId;
