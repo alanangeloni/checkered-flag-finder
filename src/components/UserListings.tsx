@@ -102,7 +102,7 @@ const UserListings = ({ userId }: UserListingsProps) => {
               <h4 className="font-semibold truncate">{listing.name}</h4>
               <p className="text-sm text-gray-500 mt-1 line-clamp-2">{listing.short_description}</p>
               <div className="flex flex-wrap justify-between gap-2 mt-3">
-                <Link to={`/car-details/${listing.id}`}>
+                <Link to={`/car-details/${listing.id}/${listing.slug || ''}`}>
                   <Button variant="outline" size="sm">View</Button>
                 </Link>
                 <Link to={`/edit-listing/${listing.id}`}>

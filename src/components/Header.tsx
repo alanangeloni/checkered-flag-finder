@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ScrollArea } from '@/components/ui/scroll-area';
+
 const Header = () => {
   const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
@@ -52,7 +53,8 @@ const Header = () => {
       console.error("Sign out error:", error);
     }
   };
-  const MobileNav = () => <Sheet>
+  const MobileNav = () => (
+    <Sheet>
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="md:hidden">
           <Menu className="h-5 w-5" />
@@ -94,12 +96,16 @@ const Header = () => {
               </nav>
               
               <div className="mt-6 pt-6 border-t">
-                {user ? <div className="flex flex-col space-y-2">
+                {user ? (
+                  <div className="flex flex-col space-y-2">
                     <Link to="/profile" className="px-2 py-2 hover:bg-gray-100 rounded-md">
                       Profile
                     </Link>
                     <Link to="/my-listings" className="px-2 py-2 hover:bg-gray-100 rounded-md">
                       My Listings
+                    </Link>
+                    <Link to="/blog-manager" className="px-2 py-2 hover:bg-gray-100 rounded-md">
+                      Blog Manager
                     </Link>
                     <Link to="/settings" className="px-2 py-2 hover:bg-gray-100 rounded-md">
                       Settings
@@ -107,21 +113,26 @@ const Header = () => {
                     <button onClick={handleSignOut} className="px-2 py-2 text-left hover:bg-gray-100 rounded-md text-red-600">
                       Sign Out
                     </button>
-                  </div> : <div className="flex flex-col space-y-3">
+                  </div>
+                ) : (
+                  <div className="flex flex-col space-y-3">
                     <Link to="/login">
                       <Button variant="outline" className="w-full">Sign In</Button>
                     </Link>
                     <Link to="/list-car">
                       <Button className="w-full bg-racecar-red hover:bg-red-700">List Your Car</Button>
                     </Link>
-                  </div>}
+                  </div>
+                )}
               </div>
             </div>
           </ScrollArea>
         </div>
       </SheetContent>
-    </Sheet>;
-  return <header className="bg-white py-4 sm:px-6 border-b border-gray-200 px-0">
+    </Sheet>
+  );
+  return (
+    <header className="bg-white py-4 sm:px-6 border-b border-gray-200 px-0">
       <div className="container mx-auto">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 sm:space-x-8">
@@ -179,7 +190,8 @@ const Header = () => {
               <span className="hidden sm:block">Search</span>
             </Button>
             
-            {user ? <>
+            {user ? (
+              <>
                 <Link to="/list-car" className="hidden sm:block">
                   <Button size="sm" className="bg-racecar-red hover:bg-red-700">List Your Car</Button>
                 </Link>
@@ -202,6 +214,9 @@ const Header = () => {
                       <Link to="/my-listings" className="w-full cursor-pointer">My Listings</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
+                      <Link to="/blog-manager" className="w-full cursor-pointer">Blog Manager</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
                       <Link to="/settings" className="w-full cursor-pointer">Settings</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
@@ -209,60 +224,76 @@ const Header = () => {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </> : <>
+              </>
+            ) : (
+              <>
                 <Link to="/login" className="hidden sm:block">
                   <Button variant="outline" size="sm">Sign In</Button>
                 </Link>
                 <Link to="/list-car" className="hidden sm:block">
                   <Button size="sm" className="bg-racecar-red hover:bg-red-700">List Your Car</Button>
                 </Link>
-              </>}
+              </>
+            )}
           </div>
         </div>
       </div>
-    </header>;
+    </header>
+  );
 };
 
 // Updated categories list for the dropdown
-const categories = [{
-  title: "Open Wheel",
-  description: "Single-seater, open-wheel racing cars including F1, F2, F3, and IndyCar",
-  href: "/category/open-wheel"
-}, {
-  title: "Prototype",
-  description: "Purpose-built race cars for endurance events like Le Mans and WEC",
-  href: "/category/prototype"
-}, {
-  title: "GT",
-  description: "Grand touring cars built for both performance and comfort on long-distance races",
-  href: "/category/gt"
-}, {
-  title: "Stock Car",
-  description: "Modified production-based vehicles used in NASCAR and similar series",
-  href: "/category/stock-car"
-}, {
-  title: "Touring",
-  description: "Production-based race cars used in touring car racing championships",
-  href: "/category/touring"
-}, {
-  title: "Rally",
-  description: "Modified production cars designed for off-road racing across varied terrains",
-  href: "/category/rally"
-}, {
-  title: "Drift",
-  description: "Vehicles specially modified for the motorsport of drifting",
-  href: "/category/drift"
-}, {
-  title: "Drag",
-  description: "Straight-line acceleration vehicles built for maximum speed over short distances",
-  href: "/category/drag"
-}, {
-  title: "Vintage and Classic",
-  description: "Historic racing vehicles from motorsport's golden eras",
-  href: "/category/vintage-classic"
-}, {
-  title: "Production",
-  description: "Lightly modified production cars for entry-level racing",
-  href: "/category/production"
-}];
+const categories = [
+  {
+    title: "Open Wheel",
+    description: "Single-seater, open-wheel racing cars including F1, F2, F3, and IndyCar",
+    href: "/category/open-wheel"
+  },
+  {
+    title: "Prototype",
+    description: "Purpose-built race cars for endurance events like Le Mans and WEC",
+    href: "/category/prototype"
+  },
+  {
+    title: "GT",
+    description: "Grand touring cars built for both performance and comfort on long-distance races",
+    href: "/category/gt"
+  },
+  {
+    title: "Stock Car",
+    description: "Modified production-based vehicles used in NASCAR and similar series",
+    href: "/category/stock-car"
+  },
+  {
+    title: "Touring",
+    description: "Production-based race cars used in touring car racing championships",
+    href: "/category/touring"
+  },
+  {
+    title: "Rally",
+    description: "Modified production cars designed for off-road racing across varied terrains",
+    href: "/category/rally"
+  },
+  {
+    title: "Drift",
+    description: "Vehicles specially modified for the motorsport of drifting",
+    href: "/category/drift"
+  },
+  {
+    title: "Drag",
+    description: "Straight-line acceleration vehicles built for maximum speed over short distances",
+    href: "/category/drag"
+  },
+  {
+    title: "Vintage and Classic",
+    description: "Historic racing vehicles from motorsport's golden eras",
+    href: "/category/vintage-classic"
+  },
+  {
+    title: "Production",
+    description: "Lightly modified production cars for entry-level racing",
+    href: "/category/production"
+  }
+];
+
 export default Header;

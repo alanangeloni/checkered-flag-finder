@@ -16,6 +16,7 @@ import Signup from "./pages/Signup";
 import Profile from "./pages/Profile";
 import Messages from "./pages/Messages";
 import BlogManager from "./pages/BlogManager";
+import EditListing from "./pages/EditListing";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +33,7 @@ const App = () => (
           <Route path="/blog/:slug" element={<BlogArticle />} />
           <Route path="/car-details/:id/:slug?" element={<CarDetails />} />
           <Route path="/list-car" element={<ListCar />} />
+          <Route path="/edit-listing/:id" element={<EditListing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/profile" element={<Profile />} />
