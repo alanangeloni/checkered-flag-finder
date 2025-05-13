@@ -122,7 +122,7 @@ export const useListCarForm = () => {
         .replace(/[^\w\s]/gi, '')
         .replace(/\s+/g, '-');
 
-      // Handle category and subcategory IDs - properly handle string values
+      // Handle category and subcategory IDs
       let categoryId = null;
       if (values.categoryId && values.categoryId !== '' && values.categoryId !== '1') {
         categoryId = values.categoryId;
@@ -133,14 +133,8 @@ export const useListCarForm = () => {
         subcategoryId = values.subcategoryId;
       }
 
-      console.log("Inserting car listing...");
-      console.log("Values: ", {
-        name: values.name,
-        slug: carSlug,
-        category_id: categoryId,
-        subcategory_id: subcategoryId
-      });
-
+      console.log("Creating car listing...");
+      
       // Create the car listing
       const { data: carListing, error: carError } = await supabase
         .from('car_listings')
@@ -182,7 +176,6 @@ export const useListCarForm = () => {
       if (imageFiles.length > 0 && carListing) {
         console.log(`Uploading ${imageFiles.length} images...`);
         
-        // Upload each image sequentially to avoid race conditions
         for (let i = 0; i < imageFiles.length; i++) {
           const file = imageFiles[i];
           
@@ -195,7 +188,7 @@ export const useListCarForm = () => {
             console.log(`Uploading image ${i + 1}/${imageFiles.length}: ${filePath}`);
             
             // Upload the file to storage
-            const { error: uploadError } = await supabase.storage
+            const { error: uploadError, data: uploadData } = await supabase.storage
               .from('car-images')
               .upload(filePath, file);
             
@@ -206,18 +199,23 @@ export const useListCarForm = () => {
             }
             
             // Get the public URL
-            const { data: publicURL } = supabase.storage
+            const { data: publicURLData } = supabase.storage
               .from('car-images')
               .getPublicUrl(filePath);
             
-            console.log(`Image ${i + 1} uploaded, URL:`, publicURL.publicUrl);
+            if (!publicURLData || !publicURLData.publicUrl) {
+              console.error(`Failed to get public URL for image ${i}`);
+              continue;
+            }
+            
+            console.log(`Image ${i + 1} uploaded, URL:`, publicURLData.publicUrl);
             
             // Add image record to car_images table
             const { error: imageRecordError } = await supabase
               .from('car_images')
               .insert({
                 car_id: carListing.id,
-                image_url: publicURL.publicUrl,
+                image_url: publicURLData.publicUrl,
                 is_primary: i === 0 // First image is primary
               });
             
@@ -227,6 +225,7 @@ export const useListCarForm = () => {
             }
           } catch (err) {
             console.error(`Unexpected error with image ${i}:`, err);
+            toast.error(`Error processing image ${i + 1}`);
           }
         }
       }
@@ -245,7 +244,6 @@ export const useListCarForm = () => {
     form,
     selectedCategory,
     previewImages,
-    imageFiles,
     isSubmitting,
     handleCategoryChange,
     handleImageUpload,

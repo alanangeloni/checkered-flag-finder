@@ -237,7 +237,7 @@ export const useEditCarForm = (carId: string | undefined) => {
         .replace(/[^\w\s]/gi, '')
         .replace(/\s+/g, '-');
 
-      // Handle category and subcategory IDs - properly handle string values
+      // Handle category and subcategory IDs
       let categoryId = null;
       if (values.categoryId && values.categoryId !== '' && values.categoryId !== '1') {
         categoryId = values.categoryId;
@@ -308,8 +308,6 @@ export const useEditCarForm = (carId: string | undefined) => {
           if (deleteImageError) {
             console.error('Error deleting image record:', deleteImageError);
           }
-          
-          // Could also delete the file from storage here if needed
         }
       }
 
@@ -329,7 +327,7 @@ export const useEditCarForm = (carId: string | undefined) => {
             console.log(`Uploading image ${i + 1}/${imageFiles.length}: ${filePath}`);
             
             // Upload the file to storage
-            const { error: uploadError } = await supabase.storage
+            const { error: uploadError, data: uploadData } = await supabase.storage
               .from('car-images')
               .upload(filePath, file);
             
@@ -340,11 +338,16 @@ export const useEditCarForm = (carId: string | undefined) => {
             }
             
             // Get the public URL
-            const { data: publicURL } = supabase.storage
+            const { data: publicURLData } = supabase.storage
               .from('car-images')
               .getPublicUrl(filePath);
             
-            console.log(`Image ${i + 1} uploaded, URL:`, publicURL.publicUrl);
+            if (!publicURLData || !publicURLData.publicUrl) {
+              console.error(`Failed to get public URL for image ${i}`);
+              continue;
+            }
+            
+            console.log(`Image ${i + 1} uploaded, URL:`, publicURLData.publicUrl);
             
             // Add image record to car_images table
             const isPrimary = existingImages.length === 0 && i === 0; // First image is primary if no existing images
@@ -353,7 +356,7 @@ export const useEditCarForm = (carId: string | undefined) => {
               .from('car_images')
               .insert({
                 car_id: updatedCar.id,
-                image_url: publicURL.publicUrl,
+                image_url: publicURLData.publicUrl,
                 is_primary: isPrimary
               });
             
