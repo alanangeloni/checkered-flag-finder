@@ -12,6 +12,8 @@ import SpecificationsSection from '@/components/list-car/SpecificationsSection';
 import DescriptionSection from '@/components/list-car/DescriptionSection';
 import ImageUploadSection from '@/components/list-car/ImageUploadSection';
 import useListCarForm from '@/components/list-car/useListCarForm';
+import { useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const ListCar = () => {
   const {
@@ -25,6 +27,42 @@ const ListCar = () => {
     handleDragEnd,
     onSubmit,
   } = useListCarForm();
+  
+  // Check if the storage bucket exists on component load
+  useEffect(() => {
+    const checkBucket = async () => {
+      try {
+        const { data: buckets, error } = await supabase.storage.listBuckets();
+        if (error) {
+          console.error("Error fetching buckets:", error);
+          return;
+        }
+
+        const carImagesBucketExists = buckets?.some(bucket => bucket.name === 'car-images');
+        console.log("Car images bucket exists:", carImagesBucketExists);
+        
+        if (!carImagesBucketExists) {
+          // Try to create the bucket
+          console.log("Attempting to create car-images bucket on page load...");
+          const { data, error: createError } = await supabase.storage.createBucket('car-images', {
+            public: true,
+            fileSizeLimit: 5242880,
+            allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+          });
+          
+          if (createError) {
+            console.error("Error creating car-images bucket:", createError);
+          } else {
+            console.log("Car-images bucket created successfully:", data);
+          }
+        }
+      } catch (err) {
+        console.error("Exception checking/creating bucket:", err);
+      }
+    };
+    
+    checkBucket();
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">

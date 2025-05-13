@@ -112,46 +112,67 @@ export const useListCarForm = () => {
         .replace(/[^\w\s]/gi, '')
         .replace(/\s+/g, '-');
 
-      // Normalize data for insertion
-      let categoryId = null;
-      if (values.categoryId && values.categoryId !== '' && values.categoryId !== '1') {
-        categoryId = values.categoryId;
-      }
-
-      let subcategoryId = null;
-      if (values.subcategoryId && values.subcategoryId !== '') {
-        subcategoryId = values.subcategoryId;
-      }
-
       console.log("Creating car listing...");
+      console.log("Values:", values);
+
+      // Prepare data for insertion, handling UUID validation
+      const carData: any = {
+        name: values.name,
+        make: values.make,
+        model: values.model || null,
+        year: values.year ? parseInt(values.year) : null,
+        price: values.price ? parseFloat(values.price) : 0,
+        short_description: values.shortDescription,
+        detailed_description: values.detailedDescription || null,
+        location: values.location || null,
+        user_id: userId,
+        engine_hours: values.engineHours ? parseInt(values.engineHours) : null,
+        engine_specs: values.engineSpecs || null,
+        race_car_type: values.raceCarType || null,
+        drivetrain: values.drivetrain || null,
+        transmission: values.transmission || null,
+        safety_equipment: values.safetyEquipment || null,
+        suspension: values.suspension || null,
+        brakes: values.brakes || null,
+        weight: values.weight || null,
+        seller_type: values.sellerType || null,
+        slug: carSlug
+      };
       
+      // Only add category/subcategory if they're valid UUIDs
+      if (values.categoryId && values.categoryId !== '' && values.categoryId !== '1') {
+        try {
+          // Validate if it's a proper UUID
+          const uuid = uuidv4(); // Just to access the UUID validation logic
+          if (typeof values.categoryId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(values.categoryId)) {
+            carData.category_id = values.categoryId;
+          } else {
+            console.log("Invalid category ID format, setting to null:", values.categoryId);
+          }
+        } catch (err) {
+          console.log("Error validating category ID, setting to null:", err);
+        }
+      }
+      
+      if (values.subcategoryId && values.subcategoryId !== '') {
+        try {
+          // Validate if it's a proper UUID
+          if (typeof values.subcategoryId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(values.subcategoryId)) {
+            carData.subcategory_id = values.subcategoryId;
+          } else {
+            console.log("Invalid subcategory ID format, setting to null:", values.subcategoryId);
+          }
+        } catch (err) {
+          console.log("Error validating subcategory ID, setting to null:", err);
+        }
+      }
+
+      console.log("Prepared car data:", carData);
+
       // Step 1: Create the car listing first
       const { data: carListing, error: carError } = await supabase
         .from('car_listings')
-        .insert({
-          name: values.name,
-          make: values.make,
-          model: values.model || null,
-          year: values.year ? parseInt(values.year) : null,
-          category_id: categoryId,
-          subcategory_id: subcategoryId,
-          price: values.price ? parseFloat(values.price) : 0,
-          short_description: values.shortDescription,
-          detailed_description: values.detailedDescription || null,
-          location: values.location || null,
-          user_id: userId,
-          engine_hours: values.engineHours ? parseInt(values.engineHours) : null,
-          engine_specs: values.engineSpecs || null,
-          race_car_type: values.raceCarType || null,
-          drivetrain: values.drivetrain || null,
-          transmission: values.transmission || null,
-          safety_equipment: values.safetyEquipment || null,
-          suspension: values.suspension || null,
-          brakes: values.brakes || null,
-          weight: values.weight || null,
-          seller_type: values.sellerType || null,
-          slug: carSlug
-        })
+        .insert(carData)
         .select()
         .single();
 
@@ -170,6 +191,33 @@ export const useListCarForm = () => {
       const uploadedImages = [];
       const failedImages = [];
 
+      // Check if storage bucket exists and create it if it doesn't
+      const { data: buckets } = await supabase.storage.listBuckets();
+      console.log("Available buckets:", buckets);
+      
+      const carImagesBucketExists = buckets?.some(bucket => bucket.name === 'car-images');
+      
+      if (!carImagesBucketExists) {
+        try {
+          console.log('Attempting to create car-images storage bucket...');
+          const { data: newBucket, error: bucketError } = await supabase.storage.createBucket('car-images', {
+            public: true,
+            fileSizeLimit: 5242880, // 5MB in bytes
+            allowedMimeTypes: ['image/png', 'image/jpeg', 'image/gif', 'image/webp']
+          });
+          
+          if (bucketError) {
+            console.error('Error creating bucket:', bucketError);
+            // Continue anyway, as the bucket might still work or already exist
+          } else {
+            console.log('Bucket created successfully:', newBucket);
+          }
+        } catch (bucketErr) {
+          console.error('Exception when creating bucket:', bucketErr);
+          // Continue anyway
+        }
+      }
+
       if (imageFiles.length > 0) {
         console.log(`Uploading ${imageFiles.length} images...`);
         
@@ -185,7 +233,7 @@ export const useListCarForm = () => {
             console.log(`Uploading image ${i + 1}/${imageFiles.length}: ${filePath}`);
             
             // Upload the file to storage
-            const { error: uploadError } = await supabase.storage
+            const { data: uploadData, error: uploadError } = await supabase.storage
               .from('car-images')
               .upload(filePath, file);
             
@@ -194,6 +242,8 @@ export const useListCarForm = () => {
               failedImages.push({ file: file.name, error: uploadError.message });
               continue;
             }
+            
+            console.log(`Upload successful for image ${i + 1}:`, uploadData);
             
             // Get the public URL
             const { data: publicURLData } = supabase.storage
@@ -225,6 +275,7 @@ export const useListCarForm = () => {
               failedImages.push({ file: file.name, error: imageRecordError.message });
             } else if (imageRecord) {
               uploadedImages.push(imageRecord);
+              console.log(`Image record created for image ${i + 1}:`, imageRecord);
             }
           } catch (err: any) {
             console.error(`Unexpected error with image ${i}:`, err);
@@ -283,6 +334,7 @@ export const useListCarForm = () => {
     try {
       setIsSubmitting(true);
       console.log("Starting submission...");
+      console.log("Form values:", values);
 
       // Check if the user is logged in
       const { data: { session } } = await supabase.auth.getSession();
