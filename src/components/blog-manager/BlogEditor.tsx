@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
 import { UploadCloud, X } from 'lucide-react';
+import { BlogPost } from '@/types/customTypes';
 
 // Form schema for blog post
 const blogPostSchema = z.object({
@@ -22,18 +23,6 @@ const blogPostSchema = z.object({
 });
 
 type BlogPostFormValues = z.infer<typeof blogPostSchema>;
-
-interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  image_url: string;
-  published: boolean;
-  created_at: string;
-  updated_at: string;
-}
 
 interface BlogEditorProps {
   post?: BlogPost;
@@ -59,9 +48,9 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
     if (post) {
       form.reset({
         title: post.title,
-        excerpt: post.excerpt,
+        excerpt: post.excerpt || '',
         content: post.content,
-        published: post.published,
+        published: post.published || false,
       });
       setPreviewImage(post.image_url);
     }
@@ -139,13 +128,13 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
       if (post) {
         // Update existing post
         const { error } = await supabase
-          .from('blog_posts')
+          .from('blog_articles')
           .update({
             title: values.title,
             slug: slug,
             excerpt: values.excerpt,
             content: values.content,
-            image_url: imageUrl,
+            featured_image: imageUrl,
             published: values.published,
             updated_at: new Date().toISOString(),
           })
@@ -156,13 +145,13 @@ const BlogEditor = ({ post, onSaved }: BlogEditorProps) => {
       } else {
         // Create new post
         const { error } = await supabase
-          .from('blog_posts')
+          .from('blog_articles')
           .insert({
             title: values.title,
             slug: slug,
             excerpt: values.excerpt,
             content: values.content,
-            image_url: imageUrl,
+            featured_image: imageUrl,
             published: values.published,
           });
         

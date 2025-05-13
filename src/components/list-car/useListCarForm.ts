@@ -81,6 +81,9 @@ export const useListCarForm = () => {
         return;
       }
 
+      // Generate a slug for the car listing
+      const carSlug = values.name.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, '-');
+
       // Create the car listing
       const { data: carListing, error: carError } = await supabase
         .from('car_listings')
@@ -106,7 +109,7 @@ export const useListCarForm = () => {
           brakes: values.brakes,
           weight: values.weight,
           seller_type: values.sellerType,
-          slug: values.name.toLowerCase().replace(/[^\w\s]/gi, '').replace(/\s+/g, '-')
+          slug: carSlug
         })
         .select()
         .single();
@@ -116,10 +119,10 @@ export const useListCarForm = () => {
       // Handle image uploads if needed
       if (imageFiles.length > 0 && carListing) {
         toast.success('Car listing created successfully!');
-        navigate(`/car-details/${carListing.id}/${carListing.slug}`);
+        navigate(`/car-details/${carListing.id}/${carSlug}`);
       } else {
         toast.success('Car listing created successfully!');
-        navigate(`/car-details/${carListing.id}/${carListing.slug}`);
+        navigate(`/car-details/${carListing.id}/${carSlug}`);
       }
     } catch (err: any) {
       console.error('Error creating listing:', err);

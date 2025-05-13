@@ -7,18 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import BlogEditor from './BlogEditor';
-
-interface BlogPost {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  content: string;
-  image_url: string;
-  published: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { BlogPost } from '@/types/customTypes';
 
 const BlogsList = () => {
   const [posts, setPosts] = useState<BlogPost[]>([]);
@@ -30,7 +19,7 @@ const BlogsList = () => {
   const fetchPosts = async () => {
     setIsLoading(true);
     const { data, error } = await supabase
-      .from('blog_posts')
+      .from('blog_articles')
       .select('*')
       .order('created_at', { ascending: false });
     
@@ -56,7 +45,7 @@ const BlogsList = () => {
     const confirmDelete = window.confirm('Are you sure you want to delete this post?');
     if (confirmDelete) {
       const { error } = await supabase
-        .from('blog_posts')
+        .from('blog_articles')
         .delete()
         .eq('id', id);
       
@@ -72,7 +61,7 @@ const BlogsList = () => {
 
   const handleTogglePublish = async (id: string, currentStatus: boolean) => {
     const { error } = await supabase
-      .from('blog_posts')
+      .from('blog_articles')
       .update({ published: !currentStatus })
       .eq('id', id);
     
@@ -87,7 +76,7 @@ const BlogsList = () => {
 
   const filteredPosts = posts.filter(post => 
     post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.excerpt.toLowerCase().includes(searchTerm.toLowerCase())
+    (post.excerpt && post.excerpt.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   return (
@@ -150,7 +139,7 @@ const BlogsList = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleTogglePublish(post.id, post.published)}
+                        onClick={() => handleTogglePublish(post.id, post.published || false)}
                       >
                         {post.published ? 'Unpublish' : 'Publish'}
                       </Button>

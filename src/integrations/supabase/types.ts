@@ -144,6 +144,7 @@ export type Database = {
           safety_equipment: string | null
           seller_type: string | null
           short_description: string
+          slug: string | null
           status: string
           subcategory_id: string | null
           suspension: string | null
@@ -174,6 +175,7 @@ export type Database = {
           safety_equipment?: string | null
           seller_type?: string | null
           short_description: string
+          slug?: string | null
           status?: string
           subcategory_id?: string | null
           suspension?: string | null
@@ -204,6 +206,7 @@ export type Database = {
           safety_equipment?: string | null
           seller_type?: string | null
           short_description?: string
+          slug?: string | null
           status?: string
           subcategory_id?: string | null
           suspension?: string | null

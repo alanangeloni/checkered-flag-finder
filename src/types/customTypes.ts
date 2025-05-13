@@ -25,3 +25,18 @@ export type MessageWithProfiles = Message & {
   sender: Profile;
   recipient: Profile;
 };
+
+// Blog related types
+export type BlogPost = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content: string;
+  image_url: string | null;
+  published: boolean | null;
+  created_at: string;
+  updated_at: string;
+  author_id?: string | null;
+  category_id?: string | null;
+};
