@@ -14,11 +14,24 @@ interface CarImageGalleryProps {
   images: string[];
   carName: string;
   isFeatured?: boolean;
+  listingDetails?: React.ReactNode;
 }
 
-const CarImageGallery = ({ images, carName, isFeatured = false }: CarImageGalleryProps) => {
+const CarImageGallery = ({ images, carName, isFeatured = false, listingDetails }: CarImageGalleryProps) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+  // Ensure scrolling is always restored
+  React.useEffect(() => {
+    if (isLightboxOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isLightboxOpen]);
   
   // Ensure we have a non-empty array of images and extract image URLs properly
   const validImages = images && images.length > 0 
@@ -57,14 +70,23 @@ const CarImageGallery = ({ images, carName, isFeatured = false }: CarImageGaller
 
   return (
     <>
-      <div className="flex flex-col gap-4">
-        {/* Large Main Image */}
-        <div className="relative rounded-lg overflow-hidden bg-gray-100 h-[400px] w-full cursor-pointer" onClick={() => openLightbox(activeImageIndex)}>
-          <img 
-            src={validImages[activeImageIndex]} 
-            alt={carName} 
-            className="w-full h-full object-cover"
+      {/* Responsive grid: Large image left, 4 small images right */}
+      <div className="flex flex-col lg:flex-row gap-4 w-full">
+        {/* Main large image */}
+        <div className="relative w-full lg:w-2/3 h-[320px] lg:h-[400px] rounded-lg overflow-hidden bg-gray-100 cursor-pointer" onClick={() => openLightbox(activeImageIndex)}>
+          <img
+            src={validImages[activeImageIndex]}
+            alt={carName}
+            className="w-full h-full object-cover transition-transform duration-200 hover:scale-105"
           />
+          {/* Overlay listing details in top-right */}
+          {listingDetails && (
+            <div className="absolute top-2 right-2 text-right z-20 max-w-[75%]">
+              <div className="text-white drop-shadow-lg text-base md:text-lg font-bold leading-tight" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>
+                {listingDetails}
+              </div>
+            </div>
+          )}
           {validImages.length > 1 && (
             <>
               <button
@@ -94,21 +116,33 @@ const CarImageGallery = ({ images, carName, isFeatured = false }: CarImageGaller
             </div>
           )}
         </div>
-        
-        {/* Thumbnails Grid */}
-        {validImages.length > 1 && (
-          <div className="grid grid-cols-5 gap-2">
-            {validImages.slice(0, 5).map((image, index) => (
-              <div 
-                key={index}
-                className={`cursor-pointer rounded-md overflow-hidden h-[80px] ${index === activeImageIndex ? 'ring-2 ring-racecar-red' : ''}`}
-                onClick={() => selectImage(index)}
+        {/* 4 smaller images in 2x2 grid */}
+        <div className="w-full lg:w-1/3 h-[320px] lg:h-[400px] grid grid-cols-2 grid-rows-2 gap-[2px] h-full w-full">
+
+          {validImages.slice(0, 5).map((image, idx) => (
+            idx === 0 ? null : (
+              <div
+                key={idx}
+                className={`relative rounded-sm overflow-hidden bg-gray-100 cursor-pointer group aspect-square w-full h-full ${activeImageIndex === idx ? 'ring-2 ring-racecar-red' : ''}`}
+                onClick={() => { selectImage(idx); openLightbox(idx); }}
               >
-                <img src={image} alt={`${carName} thumbnail ${index + 1}`} className="w-full h-full object-cover" />
+                <img
+                  src={image}
+                  alt={`${carName} alt ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                />
+                {/* Overlay index */}
+                <span className="absolute bottom-1 right-2 bg-black/60 text-white text-xs rounded px-1 py-0.5 opacity-70">
+                  {idx + 1}
+                </span>
               </div>
-            ))}
-          </div>
-        )}
+            )
+          ))}
+          {/* Fill empty slots if fewer than 5 images */}
+          {Array.from({ length: Math.max(0, 4 - (validImages.length - 1)) }).map((_, idx) => (
+            <div key={`empty-${idx}`} className="rounded-sm bg-gray-100 border border-dashed border-gray-300 aspect-square w-full h-full" />
+          ))}
+        </div>
       </div>
 
       {/* Lightbox */}
@@ -120,16 +154,16 @@ const CarImageGallery = ({ images, carName, isFeatured = false }: CarImageGaller
           >
             <X size={28} />
           </button>
-          
+
           <div className="relative w-full max-w-6xl max-h-full">
             <Carousel className="w-full">
               <CarouselContent>
                 {validImages.map((image, index) => (
                   <CarouselItem key={index}>
                     <AspectRatio ratio={16 / 9} className="bg-black flex items-center justify-center">
-                      <img 
-                        src={image} 
-                        alt={`${carName} ${index + 1}`} 
+                      <img
+                        src={image}
+                        alt={`${carName} ${index + 1}`}
                         className="max-h-[80vh] max-w-full object-contain"
                       />
                     </AspectRatio>
@@ -139,7 +173,7 @@ const CarImageGallery = ({ images, carName, isFeatured = false }: CarImageGaller
               <CarouselPrevious className="left-4 bg-black/50 text-white hover:bg-black/70 border-none" />
               <CarouselNext className="right-4 bg-black/50 text-white hover:bg-black/70 border-none" />
             </Carousel>
-            
+
             <div className="absolute bottom-4 left-0 right-0 text-center text-white">
               {activeImageIndex + 1} / {validImages.length}
             </div>

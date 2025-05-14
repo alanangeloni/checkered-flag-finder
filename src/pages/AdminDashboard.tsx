@@ -22,39 +22,71 @@ const AdminDashboard = () => {
   useEffect(() => {
     const checkAdminStatus = async () => {
       setIsLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        toast.error('You must be logged in to access this page');
-        navigate('/login');
-        return;
-      }
-      
-      // Check if user is admin
-      const { data: user, error } = await supabase
-        .from('profiles')
-        .select('is_admin')
-        .eq('id', session.user.id)
-        .single();
-      
-      if (error || !user || !user.is_admin) {
-        toast.error('You do not have permission to access this page');
+      try {
+        console.log('Checking admin status...');
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          console.log('No active session found, redirecting to login');
+          toast.error('You must be logged in to access this page');
+          navigate('/login');
+          return;
+        }
+        
+        console.log('Session found, checking admin privileges');
+        
+        // Check if user is admin - with proper error handling
+        const { data: user, error } = await supabase
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (error) {
+          console.error('Error checking admin status:', error);
+          toast.error('Error verifying permissions');
+          navigate('/');
+          return;
+        }
+        
+        if (!user || !user.is_admin) {
+          console.log('User is not an admin, redirecting to home');
+          toast.error('You do not have permission to access this page');
+          navigate('/');
+          return;
+        }
+        
+        console.log('Admin status confirmed');
+        setIsAdmin(true);
+        
+        // Fetch car listings
+        await fetchCarListings();
+        
+        // Fetch messages
+        await fetchMessages();
+      } catch (error) {
+        console.error('Unexpected error in admin check:', error);
+        toast.error('An unexpected error occurred');
         navigate('/');
-        return;
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsAdmin(true);
-      
-      // Fetch car listings
-      fetchCarListings();
-      
-      // Fetch messages
-      fetchMessages();
-      
-      setIsLoading(false);
     };
     
     checkAdminStatus();
+    
+    // Set up auth state listener to prevent unexpected logouts
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state changed in admin dashboard:', event);
+      if (event === 'SIGNED_OUT') {
+        navigate('/login');
+      }
+    });
+    
+    // Cleanup function
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate]);
   
   const fetchCarListings = async () => {

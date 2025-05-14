@@ -16,6 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 const Header = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   useEffect(() => {
@@ -103,9 +104,7 @@ const Header = () => {
           <ScrollArea className="flex-1 h-[calc(100vh-65px)]">
             <div className="p-4">
               <nav className="flex flex-col space-y-4">
-                <Link to="/" className="px-2 py-2 hover:bg-gray-100 rounded-md">
-                  Home
-                </Link>
+
                 <Link to="/listings" className="px-2 py-2 hover:bg-gray-100 rounded-md">
                   Listings
                 </Link>
@@ -174,13 +173,7 @@ const Header = () => {
             
             {!isMobile && <NavigationMenu className="hidden md:flex">
                 <NavigationMenuList>
-                  <NavigationMenuItem>
-                    <Link to="/">
-                      <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                        Home
-                      </NavigationMenuLink>
-                    </Link>
-                  </NavigationMenuItem>
+
                   <NavigationMenuItem>
                     <Link to="/listings">
                       <NavigationMenuLink className={navigationMenuTriggerStyle()}>
@@ -219,10 +212,33 @@ const Header = () => {
           <div className="flex items-center space-x-2 sm:space-x-4">
             {isMobile && <MobileNav />}
             
-            <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
-              <Search className="mr-2 h-4 w-4" />
-              <span className="hidden sm:block">Search</span>
-            </Button>
+            <form
+  onSubmit={e => {
+    e.preventDefault();
+    if (searchValue.trim()) {
+      navigate(`/listings?search=${encodeURIComponent(searchValue.trim())}`);
+    }
+  }}
+  className="hidden sm:flex items-center space-x-2"
+>
+  <div className="relative">
+    <input
+      type="text"
+      value={searchValue}
+      onChange={e => setSearchValue(e.target.value)}
+      placeholder="Search listings..."
+      className="h-10 w-48 rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+      aria-label="Search listings"
+    />
+    <button
+      type="submit"
+      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-black"
+      aria-label="Submit search"
+    >
+      <Search className="h-5 w-5" />
+    </button>
+  </div>
+</form>
             
             {user ? (
               <>

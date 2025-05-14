@@ -21,6 +21,9 @@ const ListCar = () => {
     selectedCategory,
     previewImages,
     isSubmitting,
+    isLoading,
+    categories,
+    subcategories,
     handleCategoryChange,
     handleImageUpload,
     removeImage,
@@ -62,7 +65,10 @@ const ListCar = () => {
               <BasicInfoSection 
                 control={form.control} 
                 selectedCategory={selectedCategory} 
-                onCategoryChange={handleCategoryChange} 
+                onCategoryChange={handleCategoryChange}
+                categories={categories}
+                subcategories={subcategories}
+                isLoading={isLoading}
               />
 
               {/* Race Car Specifications */}
