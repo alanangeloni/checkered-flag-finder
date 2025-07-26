@@ -8,6 +8,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { ListCarFormValues, formSchema } from '../list-car/ListCarSchema';
 import { v4 as uuidv4 } from 'uuid';
 
+// Define types for categories and subcategories
+type CategoryItem = {
+  id: string;
+  name: string;
+};
+
+type SubcategoriesMap = {
+  [categoryId: string]: CategoryItem[];
+};
+
 export const useEditCarForm = (carId: string | undefined) => {
   const [carData, setCarData] = useState<any>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -15,6 +25,9 @@ export const useEditCarForm = (carId: string | undefined) => {
   const [existingImages, setExistingImages] = useState<any[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [subcategories, setSubcategories] = useState<SubcategoriesMap>({});
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const navigate = useNavigate();
   
   const form = useForm<ListCarFormValues>({
@@ -22,6 +35,60 @@ export const useEditCarForm = (carId: string | undefined) => {
     mode: 'onSubmit', // Only validate on submit
     reValidateMode: 'onSubmit',
   });
+
+  // Fetch categories and subcategories
+  useEffect(() => {
+    const fetchCategoriesAndSubcategories = async () => {
+      try {
+        setIsLoadingCategories(true);
+        
+        // Fetch categories
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from('categories')
+          .select('id, name')
+          .order('name');
+
+        if (categoriesError) {
+          console.error('Error fetching categories:', categoriesError);
+          return;
+        }
+
+        setCategories(categoriesData || []);
+
+        // Fetch subcategories
+        const { data: subcategoriesData, error: subcategoriesError } = await supabase
+          .from('subcategories')
+          .select('id, name, category_id')
+          .order('name');
+
+        if (subcategoriesError) {
+          console.error('Error fetching subcategories:', subcategoriesError);
+          return;
+        }
+
+        // Group subcategories by category_id
+        const subcategoriesMap: SubcategoriesMap = {};
+        (subcategoriesData || []).forEach(sub => {
+          if (!subcategoriesMap[sub.category_id]) {
+            subcategoriesMap[sub.category_id] = [];
+          }
+          subcategoriesMap[sub.category_id].push({
+            id: sub.id,
+            name: sub.name
+          });
+        });
+
+        setSubcategories(subcategoriesMap);
+      } catch (error: any) {
+        console.error('Error fetching categories and subcategories:', error);
+        toast.error('Failed to load categories');
+      } finally {
+        setIsLoadingCategories(false);
+      }
+    };
+
+    fetchCategoriesAndSubcategories();
+  }, []);
 
   // Fetch car data
   useEffect(() => {
@@ -425,6 +492,9 @@ export const useEditCarForm = (carId: string | undefined) => {
     previewImages,
     imageFiles,
     isSubmitting,
+    categories,
+    subcategories,
+    isLoadingCategories,
     handleCategoryChange,
     handleImageUpload,
     removeImage,
