@@ -68,7 +68,7 @@ const CategoryCard = ({ category }: { category: CategoryType }) => {
         <div className="overflow-hidden rounded-md mb-2">
           <img
             src={category.image}
-            alt={category.title}
+            alt={`${category.title} race cars for sale - Browse ${category.title} racing vehicles`}
             className="w-full h-24 sm:h-32 object-cover transform hover:scale-105 transition-transform duration-300"
           />
         </div>
@@ -85,7 +85,7 @@ const PopularCategories = () => {
   
   return (
     <div className="container mx-auto px-4 py-6">
-      <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Popular categories</h2>
+      <h2 id="popular-categories" className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6">Popular Race Car Categories</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4">
         {categories.slice(0, displayCount).map((category, index) => (
           <CategoryCard key={index} category={category} />

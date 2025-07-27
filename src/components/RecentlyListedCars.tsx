@@ -17,7 +17,7 @@ const CarListingCard = ({ listing, index }: { listing: CarListingWithImages; ind
         <div className="relative">
           <img
             src={imageUrl}
-            alt={listing.name}
+            alt={`${listing.name} - ${listing.make} ${listing.model} ${listing.year} race car for sale`}
             className="w-full h-44 object-cover"
             onError={(e) => {
               e.currentTarget.src = 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5';
@@ -112,7 +112,7 @@ const RecentlyListedCars = () => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      <h2 className="text-2xl font-bold mb-6">Recently Listed Race Cars For Sale</h2>
+      <h2 id="recent-listings" className="text-2xl font-bold mb-6">Recently Listed Race Cars For Sale</h2>
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {[...Array(4)].map((_, index) => (

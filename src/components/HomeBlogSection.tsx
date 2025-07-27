@@ -66,7 +66,7 @@ const HomeBlogSection = () => {
   
   return (
     <div className="container mx-auto px-4 py-8 sm:py-12 bg-white">
-      <h1 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-8 text-black">Latest Articles</h1>
+      <h2 id="blog-section" className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-8 text-black">Latest Racing Articles & News</h2>
       
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
         {/* Featured article - with height adjusted to match sidebar */}
@@ -75,7 +75,7 @@ const HomeBlogSection = () => {
             <div className="rounded-lg overflow-hidden shadow-md h-[16rem] sm:h-[21.5rem] relative">
               <img 
                 src={mainPost.image_url || DEFAULT_IMAGE} 
-                alt={mainPost.title} 
+                alt={`${mainPost.title} - Racing article and news`} 
                 className="w-full h-full object-cover"
               />
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 sm:p-6">
@@ -93,7 +93,7 @@ const HomeBlogSection = () => {
                 <div className="w-24 sm:w-32 h-20 sm:h-24 flex-shrink-0">
                   <img 
                     src={post.image_url || DEFAULT_IMAGE} 
-                    alt={post.title} 
+                    alt={`${post.title} - Racing news and insights`} 
                     className="w-full h-full object-cover rounded-lg"
                   />
                 </div>

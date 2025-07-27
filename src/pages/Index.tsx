@@ -14,12 +14,25 @@ const Index = () => {
     <div className="min-h-screen flex flex-col">
       <Header />
       <main className="flex-grow">
-        <HeroSection />
-        <PopularCategories />
-        <RecentlyListedCars />
-        <CallToAction />
-        <HomeBlogSection />
-        <PopularSearches />
+        <section>
+          <h1 className="sr-only">Racecar Finder - Premium Race Cars For Sale</h1>
+          <HeroSection />
+        </section>
+        <section aria-labelledby="popular-categories">
+          <PopularCategories />
+        </section>
+        <section aria-labelledby="recent-listings">
+          <RecentlyListedCars />
+        </section>
+        <section aria-labelledby="cta-section">
+          <CallToAction />
+        </section>
+        <section aria-labelledby="blog-section">
+          <HomeBlogSection />
+        </section>
+        <section aria-labelledby="popular-searches">
+          <PopularSearches />
+        </section>
       </main>
       <Footer />
     </div>
