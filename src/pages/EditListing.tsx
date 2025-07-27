@@ -9,7 +9,7 @@ import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
-import { useEditCarForm } from '@/components/edit-car/useEditCarForm';
+import useEditCarForm from '@/components/edit-car/useEditCarForm';
 import BasicInfoSection from '@/components/list-car/BasicInfoSection';
 import SpecificationsSection from '@/components/list-car/SpecificationsSection';
 import DescriptionSection from '@/components/list-car/DescriptionSection';
@@ -28,9 +28,6 @@ const EditListing = () => {
     previewImages,
     imageFiles = [],
     isSubmitting,
-    categories,
-    subcategories,
-    isLoadingCategories,
     handleCategoryChange,
     handleImageUpload,
     removeImage,
@@ -83,10 +80,7 @@ const EditListing = () => {
               <BasicInfoSection 
                 control={form.control} 
                 selectedCategory={selectedCategory} 
-                onCategoryChange={handleCategoryChange}
-                categories={categories}
-                subcategories={subcategories}
-                isLoading={isLoadingCategories}
+                onCategoryChange={handleCategoryChange} 
               />
 
               {/* Race Car Specifications */}
