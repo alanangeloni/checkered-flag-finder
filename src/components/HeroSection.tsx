@@ -55,12 +55,10 @@ const HeroSection = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {/* Main large image */}
-        <div className="md:col-span-3 relative group h-full">
-          <Link to={premiumListing ? `/car-details/${premiumListing.id}` : "/listings"} className="h-full block">
-            <div className="relative rounded-md overflow-hidden h-full" style={{
-            maxHeight: "400px"
-          }}>
-              <AspectRatio ratio={16 / 10} className="h-full">
+        <div className="md:col-span-3 relative group">
+          <Link to={premiumListing ? `/car-details/${premiumListing.id}` : "/listings"} className="block">
+            <div className="relative rounded-md overflow-hidden">
+              <AspectRatio ratio={16 / 10}>
                 <img src={premiumListing?.primary_image || fallbackMainImage} alt={premiumListing?.name || "Premium race car on track"} className="rounded-md w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
               </AspectRatio>
               {premiumListing && <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6 text-white">
@@ -83,10 +81,8 @@ const HeroSection = () => {
         </div>
         
         {/* Right side with 4 smaller images */}
-        <div className="md:col-span-2 h-full">
-          <div className="grid grid-cols-2 gap-4 h-full" style={{
-          maxHeight: "400px"
-        }}>
+        <div className="md:col-span-2">
+          <div className="grid grid-cols-2 gap-4 h-full">
             {/* Top row */}
             <div className="h-1/2">
               <AspectRatio ratio={1 / 1} className="h-full">
