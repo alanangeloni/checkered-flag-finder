@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
@@ -7,91 +7,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { ListCarFormValues, formSchema, defaultFormValues } from './ListCarSchema';
 import { v4 as uuidv4 } from 'uuid';
 
-// Define types for categories and subcategories
-type CategoryItem = {
-  id: string;
-  name: string;
-};
-
-type SubcategoriesMap = {
-  [categoryId: string]: CategoryItem[];
-};
-
 export const useListCarForm = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [previewImages, setPreviewImages] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [categories, setCategories] = useState<CategoryItem[]>([]);
-  const [subcategories, setSubcategories] = useState<SubcategoriesMap>({});
-  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
   
   const form = useForm<ListCarFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: defaultFormValues,
   });
-
-  // Fetch categories and subcategories from the database
-  useEffect(() => {
-    const fetchCategoriesAndSubcategories = async () => {
-      try {
-        setIsLoading(true);
-        
-        // Fetch categories
-        const { data: categoriesData, error: categoriesError } = await supabase
-          .from('categories')
-          .select('*')
-          .order('name');
-        
-        if (categoriesError) {
-          console.error('Error fetching categories:', categoriesError);
-          toast.error('Failed to load categories');
-          return;
-        }
-        
-        if (categoriesData) {
-          setCategories(categoriesData);
-        }
-        
-        // Fetch subcategories
-        const { data: subcategoriesData, error: subcategoriesError } = await supabase
-          .from('subcategories')
-          .select('*')
-          .order('name');
-        
-        if (subcategoriesError) {
-          console.error('Error fetching subcategories:', subcategoriesError);
-          toast.error('Failed to load subcategories');
-          return;
-        }
-        
-        if (subcategoriesData) {
-          // Group subcategories by category_id
-          const subcategoriesMap: SubcategoriesMap = {};
-          
-          subcategoriesData.forEach(sub => {
-            const categoryId = sub.category_id;
-            
-            if (!subcategoriesMap[categoryId]) {
-              subcategoriesMap[categoryId] = [];
-            }
-            
-            subcategoriesMap[categoryId].push(sub);
-          });
-          
-          setSubcategories(subcategoriesMap);
-        }
-      } catch (error) {
-        console.error('Error fetching categories and subcategories:', error);
-        toast.error('Failed to load form data');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchCategoriesAndSubcategories();
-  }, []);
 
   const handleCategoryChange = (categoryId: string) => {
     setSelectedCategory(categoryId);
@@ -440,9 +366,6 @@ export const useListCarForm = () => {
     selectedCategory,
     previewImages,
     isSubmitting,
-    isLoading,
-    categories,
-    subcategories,
     handleCategoryChange,
     handleImageUpload,
     removeImage,

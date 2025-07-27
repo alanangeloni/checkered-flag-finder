@@ -28,69 +28,36 @@ const Login = () => {
     setIsLoading(true);
     
     try {
-      console.log('Starting login process...');
+      console.log('Starting simplified login process...');
       
       // Basic validation
       if (!email || !password) {
         throw new Error('Email and password are required');
       }
       
-      // Clear any previous session data to prevent conflicts
-      localStorage.removeItem('checkered-flag-finder.user');
+      // Direct login attempt - simplified for reliability
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
       
-      // Implement login with retry mechanism for reliability
-      let loginAttempts = 0;
-      const maxAttempts = 3;
-      let loginSuccess = false;
-      let sessionData = null;
-      let loginError = null;
-      
-      while (loginAttempts < maxAttempts && !loginSuccess) {
-        try {
-          console.log(`Login attempt ${loginAttempts + 1}/${maxAttempts}`);
-          
-          // Direct login attempt with Supabase
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-          });
-          
-          if (error) {
-            loginError = error;
-            console.error('Login attempt failed:', error);
-            // Wait before retry
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          } else if (!data || !data.session) {
-            loginError = new Error('No session returned');
-            console.error('Login attempt failed: No session data');
-          } else {
-            // Success!
-            loginSuccess = true;
-            sessionData = data;
-            console.log('Login successful');
-          }
-        } catch (e) {
-          loginError = e;
-          console.error('Unexpected error during login:', e);
-        }
-        
-        loginAttempts++;
+      if (error) {
+        console.error('Login error:', error);
+        throw error;
       }
       
-      if (!loginSuccess || !sessionData) {
-        throw loginError || new Error('Login failed after multiple attempts');
+      if (!data || !data.session) {
+        throw new Error('No session returned');
       }
       
-      // Store session info with proper key matching the Supabase client config
-      localStorage.setItem('checkered-flag-finder.user', JSON.stringify({
-        id: sessionData.user?.id,
-        email: sessionData.user?.email,
+      console.log('Login successful');
+      
+      // Store session info
+      localStorage.setItem('checkered-flag-user', JSON.stringify({
+        id: data.user?.id,
+        email: data.user?.email,
         last_login: new Date().toISOString()
       }));
-      
-      // Verify session is properly stored
-      const { data: sessionCheck } = await supabase.auth.getSession();
-      console.log('Session verification:', sessionCheck.session ? 'Valid session found' : 'No session found');
       
       toast.success('Login successful!');
       navigate('/');

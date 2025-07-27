@@ -38,9 +38,7 @@ export const useCarDetails = (idOrSlug?: string) => {
           .from('car_listings')
           .select(`
             *,
-            images:car_images(*),
-            categories!car_listings_category_id_fkey(id, name),
-            subcategories!car_listings_subcategory_id_fkey(id, name)
+            images:car_images(*)
           `)
           .eq(isUuid ? 'id' : 'slug', idOrSlug)
           .single();
@@ -54,9 +52,7 @@ export const useCarDetails = (idOrSlug?: string) => {
               .from('car_listings')
               .select(`
                 *,
-                images:car_images(*),
-                categories!car_listings_category_id_fkey(id, name),
-                subcategories!car_listings_subcategory_id_fkey(id, name)
+                images:car_images(*)
               `)
               .eq('slug', idOrSlug)
               .single();
@@ -65,14 +61,7 @@ export const useCarDetails = (idOrSlug?: string) => {
               throw slugError;
             }
             
-            // Process the car data to include category and subcategory names
-          const processedCar = {
-            ...carBySlug,
-            category_name: carBySlug?.categories?.name || 'N/A',
-            subcategory_name: carBySlug?.subcategories?.name || 'N/A'
-          };
-          
-          setCarListing(processedCar);
+            setCarListing(carBySlug);
             
             // Process images to ensure we have the correct format
             const processedImages = carBySlug?.images?.map((img: any) => {
@@ -90,14 +79,7 @@ export const useCarDetails = (idOrSlug?: string) => {
             throw carError;
           }
         } else {
-          // Process the car data to include category and subcategory names
-          const processedCar = {
-            ...car,
-            category_name: car?.categories?.name || 'N/A',
-            subcategory_name: car?.subcategories?.name || 'N/A'
-          };
-          
-          setCarListing(processedCar);
+          setCarListing(car);
           
           // Process images to ensure we have the correct format
           const processedImages = car?.images?.map((img: any) => {
@@ -119,9 +101,7 @@ export const useCarDetails = (idOrSlug?: string) => {
             .from('car_listings')
             .select(`
               *,
-              images:car_images(*),
-              categories!car_listings_category_id_fkey(id, name),
-              subcategories!car_listings_subcategory_id_fkey(id, name)
+              images:car_images(*)
             `)
             .eq('category_id', car.category_id)
             .neq('id', car.id)
@@ -131,14 +111,7 @@ export const useCarDetails = (idOrSlug?: string) => {
           if (relatedError) {
             console.error('Error fetching related listings:', relatedError);
           } else {
-            // Process related listings to include category and subcategory names
-            const processedRelated = related?.map(item => ({
-              ...item,
-              category_name: item?.categories?.name || 'N/A',
-              subcategory_name: item?.subcategories?.name || 'N/A'
-            })) || [];
-            
-            setRelatedListings(processedRelated);
+            setRelatedListings(related || []);
           }
         }
 

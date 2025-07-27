@@ -13,16 +13,6 @@ import { Filter, Search } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-// Enable this for debugging
-const DEBUG = true;
-
-// Supabase storage URL for car images
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const STORAGE_BUCKET = "car_images";
-if (!SUPABASE_URL) {
-  throw new Error('Missing Supabase URL environment variable. Please set VITE_SUPABASE_URL in your .env file.');
-}
-
 // Define interfaces for better type safety
 interface CategoryItem {
   id: string;
@@ -62,51 +52,8 @@ interface CarListing {
   mileage?: number;
 }
 
-// Define a type for the raw listing data from Supabase
-interface RawListing {
-  id: string;
-  name?: string;
-  make?: string;
-  model?: string;
-  year?: number;
-  price?: number;
-  location?: string;
-  short_description?: string;
-  status?: string;
-  category_id?: string;
-  subcategory_id?: string;
-  slug?: string;
-  created_at: string;
-  primary_image?: string;
-  mileage?: number;
-  images?: RawCarImage[];
-  [key: string]: any; // Allow for additional properties
-}
-
-// Define a type for raw car image data from Supabase
-interface RawCarImage {
-  id: string;
-  image_url: string;
-  is_primary?: boolean;
-  car_listing_id: string;
-  [key: string]: any; // Allow for additional properties
-}
-
-import { useLocation } from 'react-router-dom';
-
 const Listings = () => {
-  const location = useLocation();
-  // Helper to get query param
-  function getSearchParam() {
-    const params = new URLSearchParams(location.search);
-    return params.get('search') || '';
-  }
-  const [searchTerm, setSearchTerm] = useState(getSearchParam());
-
-  // Update search term if URL changes
-  useEffect(() => {
-    setSearchTerm(getSearchParam());
-  }, [location.search]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500000]);
   const [showFilters, setShowFilters] = useState(false);
   const [sort, setSort] = useState('newest');
@@ -114,28 +61,36 @@ const Listings = () => {
   const [selectedSubcategory, setSelectedSubcategory] = useState("all");
   
   // State for database data
-  const [categories, setCategories] = useState<CategoryItem[]>([{id: 'all', name: 'All Categories'}]);
-  const [subcategories, setSubcategories] = useState<{[key: string]: CategoryItem[]}>({all: [{id: 'all', name: 'All Subcategories'}]});
-  const [listings, setListings] = useState<CarListing[]>([]);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
+  const [subcategories, setSubcategories] = useState<{[key: string]: CategoryItem[]}>({}); 
+  const [listings, setListings] = useState<CarListing[]>([]); 
   const [isLoading, setIsLoading] = useState(true);
-  const [availableSubcategories, setAvailableSubcategories] = useState<CategoryItem[]>([{id: 'all', name: 'All Subcategories'}]);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [availableSubcategories, setAvailableSubcategories] = useState<CategoryItem[]>([]);
 
   // Min and max prices from data - will be updated based on actual data
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(500000);
 
-  // Simple fetch function with basic error handling
-  const simpleFetch = async <T,>(operation: () => Promise<T>, name: string): Promise<T> => {
-    try {
-      if (DEBUG) console.log(`${name}: Starting...`);
-      const result = await operation();
-      if (DEBUG) console.log(`${name}: Successful`);
-      return result;
-    } catch (error) {
-      console.error(`${name}: Failed:`, error);
-      throw error;
+  // Helper function to retry database operations with exponential backoff
+  const retryOperation = async <T,>(operation: () => Promise<T>, name: string, maxRetries = 3): Promise<T> => {
+    let lastError: any;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`${name}: Attempt ${attempt}/${maxRetries}`);
+        const result = await operation();
+        console.log(`${name}: Operation successful`);
+        return result;
+      } catch (error) {
+        lastError = error;
+        console.error(`${name}: Attempt ${attempt}/${maxRetries} failed:`, error);
+        if (attempt < maxRetries) {
+          const delay = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s
+          console.log(`${name}: Retrying in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
     }
+    throw lastError;
   };
 
   // Fetch listings, categories and subcategories from database
@@ -143,11 +98,10 @@ const Listings = () => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
-        setLoadError(null);
-        if (DEBUG) console.log('Fetching listings data...');
+        console.log('Fetching listings data...');
         
-        // Fetch all categories with simple fetch
-        const categoriesData = await simpleFetch<any[]>(async () => {
+        // Fetch all categories with retry mechanism
+        const categoriesData = await retryOperation<any[]>(async () => {
           const { data, error } = await supabase
             .from('categories')
             .select('*')
@@ -160,22 +114,17 @@ const Listings = () => {
           return data || [];
         }, 'Categories Fetch');
         
-        if (DEBUG) console.log('Categories fetched successfully:', categoriesData.length);
+        console.log('Categories fetched successfully:', categoriesData.length);
         
         // Add "All Categories" option
-        const allCategories = [
-          { id: 'all', name: 'All Categories' },
-          ...categoriesData
-        ];
+        const allCategories: CategoryItem[] = [{id: 'all', name: 'All Categories'}, ...categoriesData.map(cat => ({
+          id: cat.id as string,
+          name: cat.name as string
+        }))];
         setCategories(allCategories);
         
         // Fetch subcategories for each category
-        const subcategoriesMap: {[key: string]: CategoryItem[]} = {
-          all: [{ id: 'all', name: 'All Subcategories' }]
-        };
-        
-        // Fetch all subcategories in one request
-        const subcategoriesData = await simpleFetch<any[]>(async () => {
+        const subcategoriesData = await retryOperation<any[]>(async () => {
           const { data, error } = await supabase
             .from('subcategories')
             .select('*')
@@ -185,133 +134,127 @@ const Listings = () => {
             console.error('Error fetching subcategories:', error);
             return [];
           }
-          
           return data || [];
         }, 'Subcategories Fetch');
         
-        if (DEBUG) console.log('Subcategories fetched successfully:', subcategoriesData.length);
+        console.log('Subcategories fetched successfully:', subcategoriesData.length);
         
         // Group subcategories by category_id
-        subcategoriesData.forEach(sub => {
-          const categoryId = sub.category_id;
-          if (!subcategoriesMap[categoryId]) {
-            subcategoriesMap[categoryId] = [{ id: 'all', name: 'All Subcategories' }];
-          }
-          subcategoriesMap[categoryId].push(sub);
-        });
+        const subcategoryMap: {[key: string]: CategoryItem[]} = {
+          all: [{id: 'all', name: 'All Subcategories'}],
+        };
         
-        setSubcategories(subcategoriesMap);
-        setAvailableSubcategories(subcategoriesMap.all || [{ id: 'all', name: 'All Subcategories' }]);
+        if (categoriesData) {
+          categoriesData.forEach((category: any) => {
+            subcategoryMap[category.id] = [{id: 'all', name: 'All Subcategories'}];
+          });
+        }
         
-        if (DEBUG) console.log('Fetching car listings...');
+        if (subcategoriesData) {
+          subcategoriesData.forEach((sub: any) => {
+            if (subcategoryMap[sub.category_id]) {
+              subcategoryMap[sub.category_id].push({
+                id: sub.id,
+                name: sub.name
+              });
+            } else {
+              subcategoryMap[sub.category_id] = [{id: 'all', name: 'All Subcategories'}, {
+                id: sub.id,
+                name: sub.name
+              }];
+            }
+          });
+        }
         
-        // Fetch car listings with images
-        const listingsData = await simpleFetch<RawListing[]>(async () => {
-          // First get the listings with all related data
-          const { data: listings, error } = await supabase
+        setSubcategories(subcategoryMap);
+        setAvailableSubcategories(subcategoryMap.all || []);
+        
+        console.log('Fetching car listings...');
+        
+        // Fetch car listings with all required data
+        let rawListingsData = [];
+        try {
+          console.log('Fetching listings...');
+          const { data, error } = await supabase
             .from('car_listings')
             .select(`
               *,
-              car_images(*)
+              car_images (id, image_url, is_primary),
+              category:categories (name),
+              subcategory:subcategories (name)
             `)
             .order('created_at', { ascending: false });
-          if (DEBUG) console.log('RAW LISTINGS FROM SUPABASE:', listings);
           
           if (error) {
-            console.error('Error fetching car listings:', error);
+            console.error('Error fetching listings:', error);
             throw error;
           }
           
-          if (DEBUG) console.log(`Successfully fetched ${listings?.length || 0} car listings with images`);
-          
-          // Process each listing to set the correct image URLs
-          if (listings && listings.length > 0) {
-            listings.forEach((listing: any) => {
-              if (listing.car_images && listing.car_images.length > 0) {
-                if (DEBUG) console.log(`Listing ${listing.id} has ${listing.car_images.length} images`);
-                
-                // Find primary image first
-                const primaryImage = listing.car_images.find((img: any) => img.is_primary === true);
-                
-                if (primaryImage) {
-                  // Use the primary image
-                  if (DEBUG) console.log(`Using primary image for listing ${listing.id}:`, primaryImage.image_url);
-                  
-                  // Handle both relative and absolute URLs
-                  if (primaryImage.image_url.startsWith('http')) {
-                    listing.primary_image = primaryImage.image_url;
-                  } else {
-                    // Construct the full Supabase storage URL
-                    listing.primary_image = `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${primaryImage.image_url}`;
-                  }
-                } else {
-                  // Use the first image if no primary image is marked
-                  const firstImage = listing.car_images[0];
-                  if (DEBUG) console.log(`Using first image for listing ${listing.id}:`, firstImage.image_url);
-                  
-                  // Handle both relative and absolute URLs
-                  if (firstImage.image_url.startsWith('http')) {
-                    listing.primary_image = firstImage.image_url;
-                  } else {
-                    // Construct the full Supabase storage URL
-                    listing.primary_image = `${SUPABASE_URL}/storage/v1/object/public/${STORAGE_BUCKET}/${firstImage.image_url}`;
-                  }
-                }
-              } else {
-                // No images found, use a default image
-                listing.primary_image = 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80';
-                if (DEBUG) console.log(`No images found for listing ${listing.id}, using default image`);
-              }
-            });
+          if (data && data.length > 0) {
+            console.log('Successfully fetched listings:', data.length);
+            rawListingsData = data;
+          } else {
+            console.warn('No listings found');
           }
-          
-          return listings || [];
-        }, 'Car Listings Fetch');
+        } catch (fetchError) {
+          console.error('Critical error fetching listings:', fetchError);
+          toast.error('Error loading listings. Please refresh the page.');
+        }
         
-        if (DEBUG) console.log('Listings fetched successfully:', listingsData.length);
+        console.log('Listings fetched successfully:', rawListingsData.length);
         
         // Process the listings data to match our CarListing interface
-        // Simplified to avoid complex joins
-        const processedListings: CarListing[] = listingsData.map(listing => {
+        const processedListings: CarListing[] = rawListingsData.map(listing => {
+          // Get primary image from the car_images array
+          const primaryImage = listing.car_images?.find(img => img.is_primary)?.image_url;
+          
+          // Get category and subcategory names from the joined data
+          const categoryName = listing.category?.name || '';
+          const subcategoryName = listing.subcategory?.name || '';
+          
           return {
             id: listing.id,
-            name: listing.name || listing.id || 'Race Car',
+            name: listing.name || 'Unnamed Listing',
             make: listing.make,
             model: listing.model,
             year: listing.year,
-            price: listing.price || 0,
+            price: Number(listing.price) || 0,
             location: listing.location,
-            short_description: listing.short_description || listing.detailed_description || '',
+            short_description: listing.short_description,
             status: listing.status || 'active',
             category_id: listing.category_id,
             subcategory_id: listing.subcategory_id,
-            category_name: '',  // We'll fetch these separately if needed
-            subcategory_name: '',
+            category_name: categoryName,
+            subcategory_name: subcategoryName,
             slug: listing.slug || listing.id,
             created_at: listing.created_at,
-            primary_image: listing.primary_image || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80',
+            primary_image: primaryImage || listing.primary_image || 'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?q=80',
             mileage: listing.mileage
           };
         });
         
-        // Calculate min and max prices from actual data
+        // Find min and max prices from the data
         if (processedListings.length > 0) {
-          const prices = processedListings.map(car => car.price).filter(price => typeof price === 'number');
+          const prices = processedListings.map(listing => listing.price).filter(price => !isNaN(price));
           if (prices.length > 0) {
-            const minDataPrice = Math.min(...prices);
-            const maxDataPrice = Math.max(...prices);
-            setMinPrice(minDataPrice);
-            setMaxPrice(maxDataPrice);
-            setPriceRange([minDataPrice, maxDataPrice]);
+            const min = Math.min(...prices);
+            const max = Math.max(...prices);
+            setMinPrice(min);
+            setMaxPrice(max);
+            setPriceRange([min, max]);
           }
         }
         
         setListings(processedListings);
       } catch (error: any) {
         console.error('Error fetching data:', error);
-        setLoadError(error.message || 'Failed to load listings');
-        // Set empty data to prevent UI from being stuck
+        toast.error(`Failed to load listings: ${error.message || 'Please try again later.'}`);
+        
+        // Even if we fail, set empty arrays to prevent UI from being stuck in loading state
         setListings([]);
+        setCategories([{id: 'all', name: 'All Categories'}]);
+        setSubcategories({all: [{id: 'all', name: 'All Subcategories'}]});
+        setAvailableSubcategories([{id: 'all', name: 'All Subcategories'}]);
       } finally {
         setIsLoading(false);
       }
@@ -324,6 +267,11 @@ const Listings = () => {
   const filteredListings = listings.filter(car => {
     // Skip listings without essential data
     if (!car || !car.id) return false;
+    
+    // For public visibility, show all listings regardless of status
+    // This is a change to make car listings visible to everyone
+    // const statusMatch = car.status === 'active';
+    const statusMatch = true;
     
     // Filter by search term
     const searchMatch = searchTerm === '' || 
@@ -342,7 +290,7 @@ const Listings = () => {
     const subcategoryMatch = selectedSubcategory === 'all' || 
       (selectedCategory !== 'all' && car.subcategory_id === selectedSubcategory);
     
-    return searchMatch && priceMatch && categoryMatch && subcategoryMatch;
+    return statusMatch && searchMatch && priceMatch && categoryMatch && subcategoryMatch;
   });
 
   // Sort listings
@@ -499,34 +447,24 @@ const Listings = () => {
           </div>
 
           {/* Show loading state */}
-          {loadError && (
-            <div className="text-center py-8 bg-red-50 rounded-lg shadow-sm mb-6">
-              <h3 className="text-xl font-medium mb-2 text-red-700">Error Loading Listings</h3>
-              <p className="text-red-600 mb-4">{loadError}</p>
-              <Button 
-                onClick={() => window.location.reload()}
-                className="bg-red-600 hover:bg-red-700 text-white"
-              >
-                Refresh Page
-              </Button>
-            </div>
-          )}
-          
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, index) => (
-                <Card key={index} className="overflow-hidden rounded-lg border-0 shadow">
-                  <div className="h-48 bg-gray-200 animate-pulse"></div>
+          {isLoading && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(6)].map((_, i) => (
+                <Card key={i} className="overflow-hidden rounded-lg border-0 shadow">
+                  <div className="w-full h-48 bg-gray-200 animate-pulse"></div>
                   <CardContent className="p-4">
-                    <div className="h-6 bg-gray-200 animate-pulse rounded mb-2"></div>
-                    <div className="h-4 bg-gray-200 animate-pulse rounded w-3/4 mb-2"></div>
-                    <div className="h-4 bg-gray-200 animate-pulse rounded w-1/2"></div>
+                    <div className="h-6 bg-gray-200 animate-pulse mb-2 w-3/4"></div>
+                    <div className="h-4 bg-gray-200 animate-pulse mb-2 w-1/2"></div>
+                    <div className="h-4 bg-gray-200 animate-pulse w-1/4"></div>
                   </CardContent>
                 </Card>
               ))}
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          )}
+
+          {/* Listings grid */}
+          {!isLoading && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {sortedListings.length > 0 ? (
                 sortedListings.map(car => {
                   // Skip invalid listings

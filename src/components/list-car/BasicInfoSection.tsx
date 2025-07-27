@@ -5,33 +5,18 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Control } from 'react-hook-form';
 import { ListCarFormValues } from './ListCarSchema';
-
-// Define types for categories and subcategories
-type CategoryItem = {
-  id: string;
-  name: string;
-};
-
-type SubcategoriesMap = {
-  [categoryId: string]: CategoryItem[];
-};
+import { categories, subcategoriesByCategory } from './ListCarFormData';
 
 interface BasicInfoSectionProps {
   control: Control<ListCarFormValues>;
   selectedCategory: string | null;
   onCategoryChange: (categoryId: string) => void;
-  categories: CategoryItem[];
-  subcategories: SubcategoriesMap;
-  isLoading: boolean;
 }
 
 export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ 
   control, 
   selectedCategory, 
-  onCategoryChange,
-  categories,
-  subcategories,
-  isLoading
+  onCategoryChange 
 }) => {
   return (
     <div>
@@ -109,15 +94,9 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {isLoading ? (
-                    <SelectItem value="loading" disabled>Loading categories...</SelectItem>
-                  ) : categories.length > 0 ? (
-                    categories.map((category) => (
-                      <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="none" disabled>No categories available</SelectItem>
-                  )}
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>{category.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
@@ -134,7 +113,7 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
               <Select 
                 onValueChange={field.onChange}
                 value={field.value}
-                disabled={!selectedCategory || isLoading}
+                disabled={!selectedCategory}
               >
                 <FormControl>
                   <SelectTrigger>
@@ -142,15 +121,9 @@ export const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {isLoading ? (
-                    <SelectItem value="loading" disabled>Loading subcategories...</SelectItem>
-                  ) : selectedCategory && subcategories[selectedCategory]?.length > 0 ? (
-                    subcategories[selectedCategory].map((subcategory) => (
-                      <SelectItem key={subcategory.id} value={subcategory.id}>{subcategory.name}</SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value="none" disabled>No subcategories available</SelectItem>
-                  )}
+                  {selectedCategory && subcategoriesByCategory[selectedCategory as keyof typeof subcategoriesByCategory]?.map((subcategory) => (
+                    <SelectItem key={subcategory.id} value={subcategory.id}>{subcategory.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />
